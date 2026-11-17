@@ -1,0 +1,473 @@
+{% extends "base.html" %} {% block title %}Booking Lapangan - SportReserve{%
+endblock %} {% block content %}
+<section class="booking-section">
+  <div class="container">
+    <a
+      href="{{ url_for('fields.detail_field', field_id=field.id) }}"
+      class="back-link"
+    >
+      ← Kembali ke Detail Lapangan
+    </a>
+
+    <div class="booking-header">
+      <span class="section-label">BOOK YOUR GAME</span>
+      <h1>Pesan Lapangan</h1>
+      <p>Ikuti beberapa langkah mudah untuk menyelesaikan reservasi.</p>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="booking-progress">
+      <div class="progress-step active" data-step="1">
+        <span>1</span>
+        <small>Jadwal</small>
+      </div>
+      <div class="progress-line"></div>
+      <div class="progress-step" data-step="2">
+        <span>2</span>
+        <small>Data Pemesan & Tim</small>
+      </div>
+      <div class="progress-line"></div>
+      <div class="progress-step" data-step="3">
+        <span>3</span>
+        <small>Konfirmasi</small>
+      </div>
+      <div class="progress-line"></div>
+      <div class="progress-step" data-step="4">
+        <span>4</span>
+        <small>Pembayaran</small>
+      </div>
+    </div>
+
+    <div class="booking-layout">
+      <div class="booking-form-card">
+        <!-- ==================================
+                     TAHAP 1: JADWAL
+                =================================== -->
+        <div class="booking-stage active" id="stage1">
+          <h2>1. Pilih Jadwal Lapangan</h2>
+          <p class="booking-subtitle">
+            Tentukan tanggal, durasi, dan waktu bermain.
+          </p>
+
+          <form
+            id="bookingForm"
+            data-price="{{ field.price }}"
+            data-field-id="{{ field.id }}"
+            data-availability-url="{{ url_for('reservations.check_availability', field_id=field.id) }}"
+          >
+            <div class="form-group">
+              <label for="bookingDate">Tanggal Bermain</label>
+              <input
+                type="date"
+                id="bookingDate"
+                name="booking_date"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="duration">Durasi Bermain</label>
+              <select id="duration" name="duration" required>
+                <option value="">Pilih durasi</option>
+                <option value="1">1 Jam</option>
+                <option value="2">2 Jam</option>
+                <option value="3">3 Jam</option>
+              </select>
+            </div>
+
+            <div class="schedule-container">
+              <div class="schedule-heading">
+                <h3>Pilih Rentang Waktu</h3>
+                <span id="scheduleDateLabel">
+                  Pilih tanggal terlebih dahulu
+                </span>
+              </div>
+
+              <div class="schedule-legend">
+                <span>
+                  <i class="legend-dot available"></i>
+                  Tersedia
+                </span>
+                <span>
+                  <i class="legend-dot booked"></i>
+                  Terisi
+                </span>
+                <span>
+                  <i class="legend-dot selected"></i>
+                  Dipilih
+                </span>
+                <span>
+                  <i class="legend-dot unavailable"></i>
+                  Tidak tersedia
+                </span>
+              </div>
+
+              <div id="scheduleMessage" class="schedule-message">
+                Pilih tanggal dan durasi untuk melihat jadwal.
+              </div>
+
+              <div id="timeSlots" class="time-slots"></div>
+
+              <input type="hidden" id="startTime" name="start_time" />
+              <input type="hidden" id="endTime" name="end_time" />
+            </div>
+
+            <div class="booking-notice">
+              <strong>Informasi</strong>
+              <p>
+                Pemilihan jadwal belum mengunci lapangan. Jadwal akan diperiksa
+                kembali saat konfirmasi.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              id="nextToStage2"
+              class="btn-primary booking-submit"
+              disabled
+            >
+              Lanjutkan
+            </button>
+          </form>
+        </div>
+
+        <!-- ==================================
+                     TAHAP 2: DATA PEMESAN DAN TIM
+                =================================== -->
+        <div class="booking-stage" id="stage2" hidden>
+          <h2>2. Data Pemesan & Tim</h2>
+          <p class="booking-subtitle">
+            Lengkapi informasi kegiatan yang akan dilakukan.
+          </p>
+
+          <div class="form-group">
+            <label>Nama Pemesan</label>
+            <input type="text" value="{{ customer_name }}" readonly />
+            <small>Nama otomatis mengikuti akun yang sedang login.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="activityType">Jenis Kegiatan</label>
+            <select id="activityType" required>
+              <option value="">Pilih jenis kegiatan</option>
+              <option value="latihan">Latihan</option>
+              <option value="friendly_match">Friendly Match</option>
+            </select>
+          </div>
+
+          <!-- FORM LATIHAN -->
+          <div id="trainingFields" hidden>
+            <div class="form-group">
+              <label for="trainingTeamName">Nama Tim</label>
+              <input
+                type="text"
+                id="trainingTeamName"
+                placeholder="Contoh: Widyatama FC"
+                maxlength="100"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="trainingPlayers">Jumlah Pemain</label>
+              <input
+                type="number"
+                id="trainingPlayers"
+                min="1"
+                max="30"
+                placeholder="Masukkan jumlah pemain"
+              />
+            </div>
+          </div>
+
+          <!-- FORM FRIENDLY MATCH -->
+          <div id="friendlyFields" hidden>
+            <div class="team-form-card">
+              <h3>Tim A</h3>
+
+              <div class="form-group">
+                <label for="teamAName">Nama Tim A</label>
+                <input
+                  type="text"
+                  id="teamAName"
+                  placeholder="Contoh: Widyatama FC"
+                  maxlength="100"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="teamAPlayers">Jumlah Pemain Tim A</label>
+                <input
+                  type="number"
+                  id="teamAPlayers"
+                  min="1"
+                  max="30"
+                  placeholder="Jumlah pemain"
+                />
+              </div>
+            </div>
+
+            <div class="team-form-card">
+              <h3>Tim B</h3>
+
+              <div class="form-group">
+                <label for="teamBName">Nama Tim B</label>
+                <input
+                  type="text"
+                  id="teamBName"
+                  placeholder="Contoh: Garuda FC"
+                  maxlength="100"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="teamBPlayers">Jumlah Pemain Tim B</label>
+                <input
+                  type="number"
+                  id="teamBPlayers"
+                  min="1"
+                  max="30"
+                  placeholder="Jumlah pemain"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="bookingNotes">Catatan Tambahan (Opsional)</label>
+            <textarea
+              id="bookingNotes"
+              rows="3"
+              placeholder="Tambahkan informasi jika diperlukan..."
+            ></textarea>
+          </div>
+
+          <div class="booking-navigation">
+            <button type="button" class="btn-secondary" id="backToStage1">
+              Kembali
+            </button>
+            <button type="button" class="btn-primary" id="nextToStage3">
+              Lanjutkan
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================================
+                     TAHAP 3: KONFIRMASI
+                =================================== -->
+        <div class="booking-stage" id="stage3" hidden>
+          <h2>3. Konfirmasi Reservasi</h2>
+          <p class="booking-subtitle">
+            Periksa kembali informasi reservasi sebelum dikonfirmasi.
+          </p>
+
+          <div class="confirmation-section">
+            <h3>Informasi Lapangan</h3>
+            <div class="summary-row">
+              <span>Nama Lapangan</span>
+              <strong>{{ field.name }}</strong>
+            </div>
+            <div class="summary-row">
+              <span>Lokasi</span>
+              <strong>{{ field.location }}</strong>
+            </div>
+          </div>
+
+          <div class="confirmation-section">
+            <h3>Jadwal Bermain</h3>
+            <div class="summary-row">
+              <span>Tanggal</span>
+              <strong id="confirmDate">-</strong>
+            </div>
+            <div class="summary-row">
+              <span>Waktu</span>
+              <strong id="confirmTime">-</strong>
+            </div>
+            <div class="summary-row">
+              <span>Durasi</span>
+              <strong id="confirmDuration">-</strong>
+            </div>
+          </div>
+
+          <div class="confirmation-section">
+            <h3>Data Pemesan & Tim</h3>
+            <div class="summary-row">
+              <span>Pemesan</span>
+              <strong>{{ customer_name }}</strong>
+            </div>
+            <div class="summary-row">
+              <span>Kegiatan</span>
+              <strong id="confirmActivity">-</strong>
+            </div>
+            <div id="confirmTeamDetails"></div>
+            <div class="summary-row">
+              <span>Catatan</span>
+              <strong id="confirmNotes">-</strong>
+            </div>
+          </div>
+
+          <div class="summary-total">
+            <span>Estimasi Total Pembayaran</span>
+            <h2 id="confirmTotal">Rp0</h2>
+          </div>
+
+          <div class="booking-notice">
+            <strong>Perhatian</strong>
+            <p>
+              Setelah konfirmasi, sistem akan memeriksa ulang ketersediaan
+              jadwal dan membuat penahanan jadwal sementara selama 10 menit.
+            </p>
+          </div>
+
+          <div class="booking-navigation">
+            <button type="button" class="btn-secondary" id="backToStage2">
+              Kembali
+            </button>
+            <button type="button" class="btn-primary" id="confirmBooking">
+              Konfirmasi Reservasi
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================================
+     TAHAP 4: PEMBAYARAN
+=================================== -->
+        <div class="booking-stage" id="stage4" hidden>
+          <h2>4. Pembayaran</h2>
+          <p class="booking-subtitle">
+            Selesaikan pembayaran sebelum batas waktu reservasi berakhir.
+          </p>
+
+          <div class="payment-status-card">
+            <span class="section-label">KODE TRANSAKSI</span>
+            <h3 id="paymentTransactionCode">-</h3>
+
+            <div class="summary-row">
+              <span>Status Reservasi</span>
+              <strong id="paymentReservationStatus">Ditahan</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Status Pembayaran</span>
+              <strong id="paymentStatus">Menunggu</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Lapangan</span>
+              <strong id="paymentFieldName">{{ field.name }}</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Tanggal</span>
+              <strong id="paymentDate">-</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Waktu</span>
+              <strong id="paymentTime">-</strong>
+            </div>
+
+            <div class="summary-total">
+              <span>Total Pembayaran</span>
+              <h2 id="paymentTotal">Rp0</h2>
+            </div>
+          </div>
+
+          <div class="payment-countdown-card">
+            <span>Batas waktu pembayaran</span>
+            <h2 id="paymentCountdown">10:00</h2>
+            <p>
+              Jadwal akan dilepas otomatis apabila pembayaran tidak diselesaikan
+              sebelum waktu habis.
+            </p>
+          </div>
+
+          <div class="payment-placeholder" id="qrisContainer">
+            <h3>QRIS SportReserve</h3>
+            <p id="qrisMessage">
+              QRIS akan ditampilkan setelah pengaturan pembayaran admin
+              terhubung.
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label for="paymentProof">Unggah Bukti Pembayaran</label>
+            <input
+              type="file"
+              id="paymentProof"
+              accept="image/png,image/jpeg,image/webp"
+            />
+            <small>Format JPG, PNG, atau WebP.</small>
+          </div>
+
+          <div id="paymentMessage" class="auth-message" hidden></div>
+
+          <div class="booking-navigation">
+            <button type="button" class="btn-secondary" id="backToStage3">
+              Kembali
+            </button>
+            <button
+              type="button"
+              class="btn-primary"
+              id="submitPayment"
+              disabled
+            >
+              Kirim Bukti Pembayaran
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RINGKASAN PESANAN -->
+      <aside class="booking-summary">
+        <span class="section-label">BOOKING SUMMARY</span>
+        <h2>Ringkasan Pesanan</h2>
+
+        <div class="summary-field">
+          <div class="summary-field-icon">⚽</div>
+          <div>
+            <h3>{{ field.name }}</h3>
+            <p>{{ field.location }}</p>
+          </div>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="summary-row">
+          <span>Tanggal</span>
+          <strong id="summaryDate">-</strong>
+        </div>
+
+        <div class="summary-row">
+          <span>Waktu</span>
+          <strong id="summaryTime">-</strong>
+        </div>
+
+        <div class="summary-row">
+          <span>Durasi</span>
+          <strong id="summaryDuration">-</strong>
+        </div>
+
+        <div class="summary-row">
+          <span>Harga per jam</span>
+          <strong>
+            Rp{{ "{:,.0f}".format(field.price).replace(",", ".") }}
+          </strong>
+        </div>
+
+        <div class="summary-total">
+          <span>Estimasi Total</span>
+          <h2 id="summaryTotal">Rp0</h2>
+        </div>
+
+        <small>
+          Harga ini masih estimasi. Tarif final akan dihitung berdasarkan data
+          tarif lapangan.
+        </small>
+      </aside>
+    </div>
+  </div>
+</section>
+
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/booking.js') }}"></script>
+{% endblock %}

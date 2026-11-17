@@ -7,8 +7,8 @@ load_dotenv()
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY")
 
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY tidak ditemukan di file .env")
+    if not SECRET_KEY:
+        raise ValueError("SECRET_KEY tidak ditemukan di file .env")
 
     DEBUG = os.getenv("FLASK_DEBUG", "True").lower() == "true"
 

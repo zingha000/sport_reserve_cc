@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}SportReserve{% endblock %}</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    {% block styles %}{% endblock %}
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="container navbar-content">
+            <a href="{{ url_for('home') }}" class="brand">
+                SportReserve
+            </a>
+
+            <nav class="nav-menu">
+                <a href="{{ url_for('home') }}">Beranda</a>
+                <a href="{{ url_for('fields.list_fields') }}">Lapangan</a>
+                <a href="#">Tentang</a>
+            </nav>
+
+            <div class="nav-actions">
+                <a href="#" class="btn-login">Masuk</a>
+                <a href="#" class="btn-register">Daftar</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 SportReserve. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

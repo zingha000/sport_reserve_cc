@@ -1,0 +1,82 @@
+{% extends "base.html" %} {% block title %}Daftar Lapangan - SportReserve{%
+endblock %} {% block content %}
+
+<section class="listing-hero">
+  <div class="container">
+    <span class="section-label">FIND YOUR PLAYING SPACE</span>
+    <h1>Temukan Lapangan Favoritmu.</h1>
+    <p>Pilih lapangan, tentukan jadwal, dan siapkan pertandinganmu.</p>
+  </div>
+</section>
+
+<section class="listing-section">
+  <div class="container">
+    <div class="listing-toolbar">
+      <div>
+        <h2>Daftar Lapangan</h2>
+        <p>{{ fields|length }} lapangan ditampilkan</p>
+      </div>
+
+      <div class="filter-control">
+        <select aria-label="Urutkan lapangan">
+          <option value="default">Urutkan Lapangan</option>
+          <option value="lowest">Harga Terendah</option>
+          <option value="highest">Harga Tertinggi</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-grid">
+      {% for field in fields %}
+      <article class="field-card" data-price="{{ field.price }}">
+        <div class="field-image">
+          {% if field.image %}
+          <img src="{{ field.image }}" alt="{{ field.name }}" />
+          {% else %}
+          <div class="field-image-placeholder">
+            <span>⚽</span>
+            <small>SPORTRESERVE</small>
+          </div>
+          {% endif %}
+
+          <span class="field-status">{{ field.status }}</span>
+        </div>
+
+        <div class="field-card-body">
+          <span class="field-type">{{ field.type }}</span>
+
+          <h3>{{ field.name }}</h3>
+
+          <p class="field-location"><span>⌖</span> {{ field.location }}</p>
+
+          <div class="field-card-footer">
+            <div class="field-price">
+              <strong
+                >Rp{{ "{:,.0f}".format(field.price).replace(",", ".") }}</strong
+              >
+              <small>/ jam</small>
+            </div>
+
+            <a
+              href="{{ url_for('fields.detail_field', field_id=field.id) }}"
+              class="field-detail-btn"
+            >
+              Lihat Detail
+            </a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    {% if not fields %}
+    <div class="field-empty">
+      <div class="field-empty-icon">⚽</div>
+      <h3>Belum ada lapangan tersedia</h3>
+      <p>Silakan kembali lagi nanti.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}

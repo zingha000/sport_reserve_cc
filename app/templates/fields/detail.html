@@ -1,0 +1,171 @@
+
+{% extends "base.html" %}
+
+{% block title %}Detail Lapangan - SportReserve{% endblock %}
+
+{% block content %}
+
+<section class="detail-section">
+  <div class="container">
+
+    <a href="{{ url_for('fields.list_fields') }}" class="back-link">
+      ← Kembali ke Daftar Lapangan
+    </a>
+
+    <div class="detail-layout">
+
+      <div class="detail-image">
+        {% if field.image %}
+          <img src="{{ field.image }}" alt="{{ field.name }}" />
+        {% else %}
+          <div class="detail-image-placeholder">
+            <span>⚽</span>
+            <small>SPORTRESERVE</small>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="detail-content">
+
+        <span class="field-type">{{ field.type }}</span>
+
+        <h1>{{ field.name }}</h1>
+
+        <p class="detail-location">⌖ {{ field.location }}</p>
+
+        <span class="detail-status">{{ field.status }}</span>
+
+        <div class="detail-divider"></div>
+
+        <h3>Informasi Lapangan</h3>
+
+        <p class="detail-description">
+          {{ field.description }}
+        </p>
+
+        <div class="detail-price">
+          <small>Harga sewa mulai dari</small>
+          <h2>
+            Rp{{ "{:,.0f}".format(field.price).replace(",", ".") }}
+            <span>/ jam</span>
+          </h2>
+        </div>
+
+        {% if session.get("user_id") %}
+
+          <a
+            href="{{ url_for('reservations.create_reservation', field_id=field.id) }}"
+            class="btn-primary detail-booking-btn"
+          >
+            Pilih Jadwal
+          </a>
+
+        {% else %}
+
+          <button
+            type="button"
+            class="btn-primary detail-booking-btn"
+            id="openLoginModal"
+          >
+            Pilih Jadwal
+          </button>
+
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if not session.get("user_id") %}
+
+<dialog id="loginModal" class="auth-modal">
+
+  <div class="auth-modal-content">
+
+    <button
+      type="button"
+      class="auth-modal-close"
+      id="closeLoginModal"
+      aria-label="Tutup popup"
+    >
+      &times;
+    </button>
+
+    <div class="auth-modal-icon">
+      🔒
+    </div>
+
+    <h2>Login Diperlukan</h2>
+
+    <p>
+      Silakan login terlebih dahulu untuk melanjutkan
+      pemesanan lapangan.
+    </p>
+
+    <div class="auth-modal-actions">
+
+      <a
+        href="{{ url_for('auth.login_page') }}"
+        class="btn-primary"
+      >
+        Login Sekarang
+      </a>
+
+      <button
+        type="button"
+        class="btn-secondary"
+        id="laterLogin"
+      >
+        Nanti
+      </button>
+
+    </div>
+
+  </div>
+
+</dialog>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block scripts %}
+
+{% if not session.get("user_id") %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const modal = document.getElementById("loginModal");
+  const openButton = document.getElementById("openLoginModal");
+  const closeButton = document.getElementById("closeLoginModal");
+  const laterButton = document.getElementById("laterLogin");
+
+  if (!modal || !openButton) return;
+
+  openButton.addEventListener("click", function () {
+    modal.showModal();
+  });
+
+  closeButton.addEventListener("click", function () {
+    modal.close();
+  });
+
+  laterButton.addEventListener("click", function () {
+    modal.close();
+  });
+
+  modal.addEventListener("click", function (event) {
+    if (event.target === modal) {
+      modal.close();
+    }
+  });
+
+});
+</script>
+
+{% endif %}
+
+{% endblock %}

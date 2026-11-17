@@ -1,4 +1,5 @@
-from flask import Flask
+
+from flask import Flask, render_template
 from app.config import Config
 
 
@@ -17,8 +18,9 @@ def create_app():
     app.register_blueprint(reservations_bp)
     app.register_blueprint(admin_bp)
 
+    # Landing Page
     @app.route("/")
     def home():
-        return "SportReserve API is running!"
+        return render_template("index.html")
 
     return app

@@ -1,11 +1,48 @@
 
-from flask import Blueprint, request, jsonify, session
+from flask import (
+    Blueprint,
+    request,
+    jsonify,
+    session,
+    render_template,
+    redirect,
+    url_for
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import get_db_connection
 from app.utils import login_required
 
+
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
+
+# ==========================================
+# HALAMAN LOGIN
+# ==========================================
+
+@auth_bp.route("/login", methods=["GET"])
+def login_page():
+    if "user_id" in session:
+        return redirect(url_for("home"))
+
+    return render_template("auth/login.html")
+
+
+# ==========================================
+# HALAMAN REGISTRASI
+# ==========================================
+
+@auth_bp.route("/register", methods=["GET"])
+def register_page():
+    if "user_id" in session:
+        return redirect(url_for("home"))
+
+    return render_template("auth/register.html")
+
+
+# ==========================================
+# PROSES REGISTRASI
+# ==========================================
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -13,6 +50,7 @@ def register():
 
     nama = data.get("nama", "").strip()
     email = data.get("email", "").strip().lower()
+    no_telepon = data.get("no_telepon", "").strip() or None
     password = data.get("password", "")
 
     if not nama or not email or not password:
@@ -31,10 +69,15 @@ def register():
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO users (nama, email, password_hash)
-                    VALUES (%s, %s, %s)
+                    INSERT INTO users (
+                        nama,
+                        email,
+                        no_telepon,
+                        password_hash
+                    )
+                    VALUES (%s, %s, %s, %s)
                     RETURNING id_user, nama, email, role;
-                """, (nama, email, password_hash))
+                """, (nama, email, no_telepon, password_hash))
 
                 user = cur.fetchone()
 
@@ -53,6 +96,10 @@ def register():
             "message": "Terjadi kesalahan pada server."
         }), 500
 
+
+# ==========================================
+# PROSES LOGIN
+# ==========================================
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -99,6 +146,10 @@ def login():
     }), 200
 
 
+# ==========================================
+# LOGOUT
+# ==========================================
+
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
     session.clear()
@@ -106,6 +157,11 @@ def logout():
     return jsonify({
         "message": "Logout berhasil."
     }), 200
+
+
+# ==========================================
+# CEK SESSION
+# ==========================================
 
 @auth_bp.route("/me", methods=["GET"])
 @login_required
