@@ -19,3 +19,12 @@ class Config:
     SESSION_COOKIE_SECURE = not DEBUG
 
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # Maksimal upload 5 MB
+
+    # Neon Object Storage (S3-compatible). Semua file upload (bukti
+    # pembayaran, gambar QRIS) disimpan di cloud, tidak ada penyimpanan lokal.
+    # Nama variabel AWS_* sama dengan yang ditulis `neon deploy` ke .env.
+    S3_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL_S3")
+    S3_REGION = os.getenv("AWS_REGION", "us-east-1")
+    S3_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+    S3_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+    S3_BUCKET = os.getenv("S3_BUCKET")

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Reservasi Saya - SportReserve{% endblock %}
+
+{% block content %}
+<section class="reservation-section">
+  <div class="container">
+    <div class="booking-header">
+      <span class="section-label">RESERVASI SAYA</span>
+      <h1>Riwayat Reservasi</h1>
+      <p>Daftar reservasi lapangan yang pernah Anda buat.</p>
+    </div>
+
+    {% if reservations %}
+    <div class="reservation-list">
+      {% for item in reservations %}
+      <a
+        class="reservation-card"
+        href="{{ url_for('reservations.reservation_detail', reservation_id=item.id_reservasi) }}"
+      >
+        <div>
+          <h3>{{ item.nama_lapangan }}</h3>
+          <p>
+            {{ item.tanggal.strftime("%d-%m-%Y") }} ·
+            {{ item.jam_mulai.strftime("%H:%M") }} -
+            {{ item.jam_selesai.strftime("%H:%M") }}
+          </p>
+          <small>Kode transaksi: {{ item.kode_transaksi or "-" }}</small>
+        </div>
+
+        <div class="reservation-card-side">
+          <span class="status-badge status-{{ item.status_reservasi }}">
+            {{ item.label_reservasi }}
+          </span>
+          <span class="status-badge status-{{ item.kelas_pembayaran }}">
+            {{ item.label_pembayaran }}
+          </span>
+          <strong>{{ item.total_harga|rupiah }}</strong>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="field-empty">
+      <div class="field-empty-icon">?</div>
+      <h3>Belum ada reservasi</h3>
+      <p>Anda belum pernah melakukan reservasi lapangan.</p>
+      <a href="{{ url_for('fields.list_fields') }}" class="btn-primary">
+        Lihat Lapangan
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

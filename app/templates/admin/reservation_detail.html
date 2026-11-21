@@ -1,0 +1,249 @@
+{% extends "admin/layout.html" %}
+{% set active_menu = "reservations" %}
+
+{% block title %}Detail Reservasi (Admin) - SportReserve{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+  <div class="container">
+    <a
+      href="{{ url_for('admin.reservation_list') }}"
+      class="back-link"
+    >
+      ← Kembali ke Dashboard
+    </a>
+
+    <div class="booking-header">
+      <span class="section-label">DETAIL RESERVASI</span>
+      <h1>{{ reservation.nama_lapangan }}</h1>
+      <p>Kode transaksi: <strong>{{ reservation.kode_transaksi or "-" }}</strong></p>
+    </div>
+
+    <div class="reservation-detail-grid">
+      <div>
+        <div class="payment-status-card">
+          <h3>Pelanggan</h3>
+          <div class="summary-row">
+            <span>Nama</span>
+            <strong>{{ reservation.nama_pelanggan }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Email</span>
+            <strong>{{ reservation.email }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Telepon</span>
+            <strong>{{ reservation.no_telepon or "-" }}</strong>
+          </div>
+        </div>
+
+        <div class="payment-status-card admin-card-gap">
+          <h3>Reservasi</h3>
+          <div class="summary-row">
+            <span>Tanggal</span>
+            <strong>{{ reservation.tanggal.strftime("%d-%m-%Y") }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Waktu</span>
+            <strong>
+              {{ reservation.jam_mulai.strftime("%H:%M") }} -
+              {{ reservation.jam_selesai.strftime("%H:%M") }}
+            </strong>
+          </div>
+          <div class="summary-row">
+            <span>Durasi</span>
+            <strong>{{ "%g"|format(reservation.durasi_jam) }} Jam</strong>
+          </div>
+          <div class="summary-row">
+            <span>Harga per jam</span>
+            <strong>{{ reservation.harga_per_jam|rupiah }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Dibuat</span>
+            <strong>{{ reservation.dibuat_wib.strftime("%d-%m-%Y %H:%M") }} WIB</strong>
+          </div>
+          <div class="summary-row">
+            <span>Status Reservasi</span>
+            <span class="status-badge status-{{ reservation.status_reservasi }}">
+              {{ reservation.label_reservasi }}
+            </span>
+          </div>
+          <div class="summary-row">
+            <span>Metode Pembayaran</span>
+            <strong>{{ reservation.channel_pembayaran or "-" }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Status Pembayaran</span>
+            <span class="status-badge status-{{ reservation.kelas_pembayaran }}">
+              {{ reservation.label_pembayaran }}
+            </span>
+          </div>
+          {% if reservation.diverifikasi_wib %}
+          <div class="summary-row">
+            <span>Ditinjau pada</span>
+            <strong>{{ reservation.diverifikasi_wib.strftime("%d-%m-%Y %H:%M") }} WIB</strong>
+          </div>
+          {% endif %}
+          {% if reservation.catatan_admin %}
+          <div class="summary-row">
+            <span>Catatan Admin</span>
+            <strong>{{ reservation.catatan_admin }}</strong>
+          </div>
+          {% endif %}
+
+          <div class="summary-total">
+            <span>Total Pembayaran</span>
+            <h2>{{ reservation.total_harga|rupiah }}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div>
+{% if reservation.status_reservasi == "menunggu" %}
+<div class="confirm-modal" id="confirmModal" hidden>
+  <div class="confirm-modal-box" role="dialog" aria-modal="true" aria-label="Konfirmasi">
+    <h3 id="confirmTitle">Konfirmasi</h3>
+    <p id="confirmText"></p>
+    <div class="confirm-modal-actions">
+      <button type="button" class="btn-secondary" id="confirmNo">Batal</button>
+      <button type="button" class="btn-primary" id="confirmYes">Ya, lanjutkan</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if reservation.has_proof %}
+        <div class="payment-status-card">
+          <h3>Bukti Pembayaran</h3>
+          <button type="button" class="payment-proof-button" id="openProof">
+            <img
+              class="payment-proof-image"
+              src="{{ url_for('reservations.payment_proof', reservation_id=reservation.id_reservasi) }}"
+              alt="Bukti pembayaran"
+            />
+          </button>
+          <small class="admin-note">Klik gambar untuk memperbesar.</small>
+        </div>
+        {% else %}
+        <div class="payment-status-card">
+          <h3>Bukti Pembayaran</h3>
+          <p class="admin-note">Pelanggan belum mengunggah bukti pembayaran.</p>
+        </div>
+        {% endif %}
+
+        {% if reservation.status_reservasi == "menunggu" %}
+        <div
+          class="payment-status-card admin-card-gap"
+          id="reviewPanel"
+          data-reservation-id="{{ reservation.id_reservasi }}"
+        >
+          <h3>Verifikasi Pembayaran</h3>
+
+          <div class="admin-compare">
+            <span class="admin-compare-title">Yang seharusnya diterima</span>
+            <div class="summary-row">
+              <span>Nominal</span>
+              <strong class="admin-compare-amount">{{ reservation.total_harga|rupiah }}</strong>
+            </div>
+            <div class="summary-row">
+              <span>Kode transaksi</span>
+              <strong>{{ reservation.kode_transaksi or "-" }}</strong>
+            </div>
+            <div class="summary-row">
+              <span>Metode dipilih</span>
+              <strong>{{ reservation.channel_pembayaran or "-" }}</strong>
+            </div>
+            {% if method %}
+            <div class="summary-row">
+              <span>Merchant tujuan</span>
+              <strong>{{ method.nama_pemilik }}</strong>
+            </div>
+            {% if method.nomor_akun %}
+            <div class="summary-row">
+              <span>Nomor akun</span>
+              <strong>{{ method.nomor_akun }}</strong>
+            </div>
+            {% endif %}
+            {% endif %}
+          </div>
+
+          <p class="admin-note">
+            Cek riwayat transaksi di aplikasi {{ reservation.channel_pembayaran or "e-wallet" }}
+            merchant, lalu cocokkan dengan bukti di sebelah kiri.
+          </p>
+
+          <div class="admin-check-list">
+            <label class="admin-check">
+              <input type="checkbox" class="review-check" />
+              Nominal di bukti sama dengan nominal di atas
+            </label>
+            <label class="admin-check">
+              <input type="checkbox" class="review-check" />
+              Tujuan pembayaran sesuai merchant
+            </label>
+            <label class="admin-check">
+              <input type="checkbox" class="review-check" />
+              Transaksi tercatat di riwayat e-wallet merchant
+            </label>
+          </div>
+
+          <div class="admin-field">
+            <label for="rejectNote">Alasan penolakan (wajib jika menolak)</label>
+            <textarea
+              id="rejectNote"
+              rows="3"
+              maxlength="500"
+              placeholder="Contoh: Nominal tidak sesuai."
+            ></textarea>
+          </div>
+
+          <div id="reviewMessage" class="auth-message" hidden></div>
+
+          <div class="admin-actions">
+            <button type="button" class="btn-primary" id="approveButton">
+              Verifikasi
+            </button>
+            <button type="button" class="btn-secondary admin-danger" id="rejectButton">
+              Tolak
+            </button>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if logs %}
+        <div class="payment-status-card admin-card-gap">
+          <h3>Riwayat Status</h3>
+          <ul class="admin-timeline">
+            {% for log in logs %}
+            <li>
+              <strong>
+                {{ log.status_sebelumnya or "-" }} → {{ log.status_sesudahnya }}
+              </strong>
+              <small>{{ log.waktu_wib.strftime("%d-%m-%Y %H:%M") }} WIB</small>
+              {% if log.keterangan %}<span>{{ log.keterangan }}</span>{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if reservation.has_proof %}
+<div class="proof-modal" id="proofModal" hidden>
+  <div class="proof-modal-inner" role="dialog" aria-modal="true" aria-label="Bukti pembayaran">
+    <button type="button" class="proof-modal-close" id="closeProof" aria-label="Tutup">&times;</button>
+    <img
+      src="{{ url_for('reservations.payment_proof', reservation_id=reservation.id_reservasi) }}"
+      alt="Bukti pembayaran"
+    />
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin-reservation.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "admin/layout.html" %}
+{% set active_menu = "dashboard" %}
+
+{% block title %}Dashboard - Admin SportReserve{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+  <div class="container">
+    <div class="booking-header">
+      <span class="section-label">RINGKASAN</span>
+      <h1>Dashboard</h1>
+      <p>Pantau reservasi dan pembayaran yang perlu ditindaklanjuti.</p>
+    </div>
+
+    <div class="admin-stats admin-stats-3">
+      <a
+        class="admin-stat admin-stat-highlight"
+        href="{{ url_for('admin.reservation_list', status='menunggu') }}"
+      >
+        <span>Perlu verifikasi</span>
+        <strong>{{ counts.get("menunggu", 0) }}</strong>
+        <small>Bukti pembayaran menunggu dicek</small>
+      </a>
+      <a
+        class="admin-stat"
+        href="{{ url_for('admin.reservation_list', status='ditahan') }}"
+      >
+        <span>Menunggu pembayaran</span>
+        <strong>{{ counts.get("ditahan", 0) }}</strong>
+        <small>Jadwal sedang ditahan</small>
+      </a>
+      <a
+        class="admin-stat"
+        href="{{ url_for('admin.reservation_list', status='dikonfirmasi') }}"
+      >
+        <span>Dikonfirmasi</span>
+        <strong>{{ counts.get("dikonfirmasi", 0) }}</strong>
+        <small>Reservasi terkonfirmasi</small>
+      </a>
+      <a class="admin-stat" href="{{ url_for('admin.reservation_list', status='semua') }}">
+        <span>Total reservasi</span>
+        <strong>{{ total }}</strong>
+        <small>Seluruh status</small>
+      </a>
+      <a class="admin-stat" href="{{ url_for('admin_fields.list_fields') }}">
+        <span>Lapangan aktif</span>
+        <strong>{{ extra.lapangan_aktif }}<em> / {{ extra.lapangan_total }}</em></strong>
+        <small>Tampil untuk pelanggan</small>
+      </a>
+      <div class="admin-stat">
+        <span>Pendapatan terkonfirmasi</span>
+        <strong class="admin-stat-money">{{ extra.pendapatan|rupiah }}</strong>
+        <small>Reservasi dikonfirmasi dan selesai</small>
+      </div>
+    </div>
+
+    <div class="admin-header-row admin-section-head">
+      <h2>Menunggu Verifikasi</h2>
+      <a
+        class="btn-secondary admin-btn-small"
+        href="{{ url_for('admin.reservation_list') }}"
+      >
+        Lihat semua reservasi
+      </a>
+    </div>
+
+    {% if pending %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Pelanggan</th>
+            <th>Lapangan</th>
+            <th>Jadwal</th>
+            <th>Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pending %}
+          <tr>
+            <td>
+              <strong>{{ item.kode_transaksi or "-" }}</strong><br />
+              <small>{{ item.dibuat_wib.strftime("%d-%m-%Y %H:%M") }}</small>
+            </td>
+            <td>
+              {{ item.nama_pelanggan }}<br />
+              <small>{{ item.no_telepon or item.email }}</small>
+            </td>
+            <td>{{ item.nama_lapangan }}</td>
+            <td>
+              {{ item.tanggal.strftime("%d-%m-%Y") }}<br />
+              <small>
+                {{ item.jam_mulai.strftime("%H:%M") }} -
+                {{ item.jam_selesai.strftime("%H:%M") }}
+              </small>
+            </td>
+            <td>{{ item.total_harga|rupiah }}</td>
+            <td>
+              <a
+                class="btn-primary admin-btn-small"
+                href="{{ url_for('admin.reservation_detail', reservation_id=item.id_reservasi) }}"
+              >
+                Tinjau
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if counts.get("menunggu", 0) > overview_limit %}
+    <p class="admin-note">
+      Menampilkan {{ overview_limit }} yang paling lama menunggu dari
+      {{ counts.get("menunggu", 0) }} reservasi.
+    </p>
+    {% endif %}
+    {% else %}
+    <div class="field-empty">
+      <div class="field-empty-icon">✅</div>
+      <h3>Semua sudah ditinjau</h3>
+      <p>Tidak ada bukti pembayaran yang menunggu verifikasi.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

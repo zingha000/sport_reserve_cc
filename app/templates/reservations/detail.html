@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Detail Reservasi - SportReserve{% endblock %}
+
+{% block content %}
+<section class="reservation-section">
+  <div class="container">
+    <a href="{{ url_for('reservations.list_reservations') }}" class="back-link">
+      ← Kembali ke Reservasi Saya
+    </a>
+
+    <div class="booking-header">
+      <span class="section-label">DETAIL RESERVASI</span>
+      <h1>{{ reservation.nama_lapangan }}</h1>
+      <p>Kode transaksi: <strong>{{ reservation.kode_transaksi or "-" }}</strong></p>
+    </div>
+
+    <div class="reservation-detail-grid">
+      <div class="payment-status-card">
+        <div class="summary-row">
+          <span>Tanggal</span>
+          <strong>{{ reservation.tanggal.strftime("%d-%m-%Y") }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Waktu</span>
+          <strong>
+            {{ reservation.jam_mulai.strftime("%H:%M") }} -
+            {{ reservation.jam_selesai.strftime("%H:%M") }}
+          </strong>
+        </div>
+        <div class="summary-row">
+          <span>Durasi</span>
+          <strong>{{ "%g"|format(reservation.durasi_jam) }} Jam</strong>
+        </div>
+        <div class="summary-row">
+          <span>Harga per jam</span>
+          <strong>{{ reservation.harga_per_jam|rupiah }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Status Reservasi</span>
+          <span class="status-badge status-{{ reservation.status_reservasi }}">
+            {{ reservation.label_reservasi }}
+          </span>
+        </div>
+        <div class="summary-row">
+          <span>Status Pembayaran</span>
+          <span class="status-badge status-{{ reservation.kelas_pembayaran }}">
+            {{ reservation.label_pembayaran }}
+          </span>
+        </div>
+
+        {% if reservation.catatan_admin %}
+        <div class="summary-row">
+          <span>Catatan Admin</span>
+          <strong>{{ reservation.catatan_admin }}</strong>
+        </div>
+        {% endif %}
+
+        <div class="summary-total">
+          <span>Total Pembayaran</span>
+          <h2>{{ reservation.total_harga|rupiah }}</h2>
+        </div>
+      </div>
+
+      <div>
+        {% if reservation.status_reservasi == "ditahan" %}
+        <div
+          class="payment-status-card"
+          id="uploadPanel"
+          data-reservation-id="{{ reservation.id_reservasi }}"
+        >
+          <h3>Unggah Bukti Pembayaran</h3>
+          <p>
+            Sisa waktu penahanan jadwal:
+            <strong id="holdRemaining" data-seconds="{{ reservation.sisa_detik or 0 }}">-</strong>
+          </p>
+
+          <div class="payment-due">
+            <span>Bayar tepat</span>
+            <strong>{{ reservation.total_harga|rupiah }}</strong>
+            <small>Kode transaksi: {{ reservation.kode_transaksi or "-" }}</small>
+          </div>
+
+          <div
+            class="payment-placeholder"
+            id="qrisContainer"
+            data-channel="{{ reservation.channel_pembayaran or '' }}"
+          >
+            <h3>Bayar dengan QRIS</h3>
+            <p>Memuat QRIS...</p>
+          </div>
+
+          <div class="form-group">
+            <label for="paymentProof">Bukti Pembayaran</label>
+            <input
+              type="file"
+              id="paymentProof"
+              accept="image/png,image/jpeg,image/webp"
+            />
+            <small>Format JPG, PNG, atau WebP. Maksimal 5 MB.</small>
+          </div>
+
+          <div id="paymentMessage" class="auth-message" hidden></div>
+
+          <button type="button" class="btn-primary" id="submitPayment" disabled>
+            Kirim Bukti Pembayaran
+          </button>
+        </div>
+        {% endif %}
+
+        {% if reservation.status_reservasi in ("dikonfirmasi", "selesai") %}
+        <h3 class="ticket-section-title">E-Tiket Reservasi</h3>
+
+        <div class="ticket-card" id="ticket">
+          <div class="ticket-head">
+            <span>SportReserve</span>
+            <strong>E-TIKET RESERVASI</strong>
+          </div>
+          <div class="ticket-code">{{ reservation.kode_transaksi or "-" }}</div>
+          <div class="summary-row">
+            <span>Pemesan</span>
+            <strong>{{ session.get("nama") }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Lapangan</span>
+            <strong>{{ reservation.nama_lapangan }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Tanggal</span>
+            <strong>{{ reservation.tanggal.strftime("%d-%m-%Y") }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Waktu</span>
+            <strong>
+              {{ reservation.jam_mulai.strftime("%H:%M") }} -
+              {{ reservation.jam_selesai.strftime("%H:%M") }}
+            </strong>
+          </div>
+          <div class="summary-row">
+            <span>Total dibayar</span>
+            <strong>{{ reservation.total_harga|rupiah }}</strong>
+          </div>
+          {% if reservation.channel_pembayaran %}
+          <div class="summary-row">
+            <span>Metode</span>
+            <strong>{{ reservation.channel_pembayaran }}</strong>
+          </div>
+          {% endif %}
+          {% if reservation.diverifikasi_wib %}
+          <div class="summary-row">
+            <span>Diverifikasi</span>
+            <strong>{{ reservation.diverifikasi_wib.strftime("%d-%m-%Y %H:%M") }} WIB</strong>
+          </div>
+          {% endif %}
+          <div class="ticket-status">✔ LUNAS &middot; DIKONFIRMASI</div>
+          <p class="ticket-note">Tunjukkan tiket ini kepada petugas saat datang.</p>
+        </div>
+
+        <div class="payment-qr-actions no-print ticket-actions">
+          <button
+            type="button"
+            class="btn-secondary payment-qr-action ticket-print"
+            id="printTicket"
+          >
+            Unduh PDF
+          </button>
+        </div>
+        {% endif %}
+
+        {% if reservation.has_proof %}
+        <div class="payment-status-card no-print">
+          <h3>Bukti Pembayaran</h3>
+          <img
+            class="payment-proof-image"
+            src="{{ url_for('reservations.payment_proof', reservation_id=reservation.id_reservasi) }}"
+            alt="Bukti pembayaran"
+          />
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/payment-methods.js') }}"></script>
+<script src="{{ url_for('static', filename='js/payment-upload.js') }}"></script>
+<script>
+  (function () {
+    const printButton = document.getElementById("printTicket");
+
+    if (printButton) {
+      printButton.addEventListener("click", function () {
+        window.print();
+      });
+    }
+  })();
+</script>
+<script>
+  (function () {
+    const panel = document.getElementById("uploadPanel");
+    if (!panel) return;
+
+    const reservationId = Number(panel.dataset.reservationId);
+    const input = document.getElementById("paymentProof");
+    const button = document.getElementById("submitPayment");
+    const message = document.getElementById("paymentMessage");
+    const remaining = document.getElementById("holdRemaining");
+
+    function showMessage(text, isError) {
+      message.textContent = text;
+      message.classList.toggle("error", isError);
+      message.classList.toggle("success", !isError);
+      message.hidden = false;
+    }
+
+    input.addEventListener("change", function () {
+      const file = input.files[0];
+
+      message.hidden = true;
+      button.disabled = true;
+
+      if (!file) return;
+
+      const error = window.PaymentUpload.validate(file);
+
+      if (error) {
+        showMessage(error, true);
+        return;
+      }
+
+      button.disabled = false;
+    });
+
+    button.addEventListener("click", async function () {
+      const file = input.files[0];
+      if (!file) return;
+
+      button.disabled = true;
+      button.textContent = "Mengunggah...";
+
+      try {
+        const data = await window.PaymentUpload.send(reservationId, file);
+
+        input.disabled = true;
+        button.textContent = "Bukti Terkirim";
+        showMessage(data.message, false);
+
+        setTimeout(function () {
+          window.location.reload();
+        }, 1200);
+      } catch (error) {
+        showMessage(error.message || "Gagal mengunggah bukti.", true);
+        button.textContent = "Kirim Bukti Pembayaran";
+        button.disabled = input.disabled;
+      }
+    });
+
+    let seconds = Number(remaining.dataset.seconds) || 0;
+    let reloaded = false;
+
+    function tick() {
+      if (seconds <= 0) {
+        remaining.textContent = "00:00";
+        input.disabled = true;
+        button.disabled = true;
+
+        if (!reloaded) {
+          reloaded = true;
+          showMessage("Waktu pembayaran telah habis. Memuat ulang...", true);
+          setTimeout(function () {
+            window.location.reload();
+          }, 1500);
+        }
+        return;
+      }
+
+      const minutes = Math.floor(seconds / 60);
+      const rest = seconds % 60;
+
+      remaining.textContent =
+        String(minutes).padStart(2, "0") + ":" + String(rest).padStart(2, "0");
+
+      seconds -= 1;
+      setTimeout(tick, 1000);
+    }
+
+    tick();
+  })();
+</script>
+{% endblock %}

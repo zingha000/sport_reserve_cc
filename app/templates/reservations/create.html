@@ -310,6 +310,17 @@ endblock %} {% block content %}
             <h2 id="confirmTotal">Rp0</h2>
           </div>
 
+          <div class="confirmation-section" id="methodSection">
+            <h3>Metode Pembayaran</h3>
+            <p class="booking-subtitle">
+              Pilih metode QRIS. Kode QR dan nominal tampil pada langkah
+              berikutnya.
+            </p>
+            <div class="method-choices" id="methodChoices">
+              <p class="method-empty">Memuat metode pembayaran...</p>
+            </div>
+          </div>
+
           <div class="booking-notice">
             <strong>Perhatian</strong>
             <p>
@@ -382,10 +393,9 @@ endblock %} {% block content %}
           </div>
 
           <div class="payment-placeholder" id="qrisContainer">
-            <h3>QRIS SportReserve</h3>
+            <h3>Bayar dengan QRIS</h3>
             <p id="qrisMessage">
-              QRIS akan ditampilkan setelah pengaturan pembayaran admin
-              terhubung.
+              QRIS tampil setelah reservasi dikonfirmasi.
             </p>
           </div>
 
@@ -400,6 +410,14 @@ endblock %} {% block content %}
           </div>
 
           <div id="paymentMessage" class="auth-message" hidden></div>
+          
+          <div id="paymentSuccessActions" hidden>
+            <a
+              href="{{ url_for('reservations.list_reservations') }}"
+              class="btn-primary"
+              >Lihat Reservasi Saya</a
+            >
+          </div>
 
           <div class="booking-navigation">
             <button type="button" class="btn-secondary" id="backToStage3">
@@ -469,5 +487,7 @@ endblock %} {% block content %}
 </section>
 
 {% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/payment-methods.js') }}"></script>
+<script src="{{ url_for('static', filename='js/payment-upload.js') }}"></script>
 <script src="{{ url_for('static', filename='js/booking.js') }}"></script>
 {% endblock %}

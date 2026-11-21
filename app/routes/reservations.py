@@ -1,4 +1,4 @@
-from datetime import date, time, datetime, timedelta
+﻿from datetime import date, time, datetime, timedelta
 from decimal import Decimal
 import secrets
 
@@ -14,9 +14,10 @@ from flask import (
 )
 from psycopg.errors import ExclusionViolation
 
+from app import storage
 from app.database import get_db_connection
 from app.routes.fields import get_fields
-from app.utils import login_required
+from app.utils import login_required, login_required_page
 
 
 reservations_bp = Blueprint(
@@ -47,12 +48,38 @@ def _minutes(value):
 
 
 def _expire_holds(cur):
+    """Kedaluwarsakan hold yang habis, beserta pembayaran 'menunggu'-nya,
+    dan catat ke reservasi_log."""
     cur.execute("""
-        UPDATE reservasi
-        SET status_reservasi = 'kedaluwarsa',
-            hold_expires_at = NULL
-        WHERE status_reservasi = 'ditahan'
-          AND hold_expires_at <= NOW();
+        WITH expired AS (
+            UPDATE reservasi
+            SET status_reservasi = 'kedaluwarsa',
+                hold_expires_at = NULL
+            WHERE status_reservasi = 'ditahan'
+              AND hold_expires_at <= NOW()
+            RETURNING id_reservasi
+        ),
+        expired_payments AS (
+            UPDATE pembayaran
+            SET status_pembayaran = 'kedaluwarsa'
+            WHERE status_pembayaran = 'menunggu'
+              AND id_reservasi IN (SELECT id_reservasi FROM expired)
+            RETURNING id_pembayaran
+        )
+        INSERT INTO reservasi_log (
+            id_reservasi,
+            id_user,
+            status_sebelumnya,
+            status_sesudahnya,
+            keterangan
+        )
+        SELECT
+            id_reservasi,
+            NULL,
+            'ditahan',
+            'kedaluwarsa',
+            'Batas waktu penahanan jadwal habis.'
+        FROM expired;
     """)
 
 
@@ -180,10 +207,29 @@ def check_availability(field_id):
     }), 200
 
 
+SQL_CONFIRM_METHOD = """
+    SELECT id_pengaturan, nama_ewallet, nama_pemilik, nomor_akun
+    FROM pengaturan_pembayaran
+    WHERE status_aktif = TRUE
+      AND LOWER(nama_ewallet) = LOWER(%s)
+    ORDER BY id_pengaturan
+    LIMIT 1;
+"""
+
+
 @reservations_bp.route("/confirm", methods=["POST"])
 @login_required
 def confirm_reservation():
     data = request.get_json(silent=True) or {}
+
+    # Metode pembayaran wajib dipilih di langkah konfirmasi.
+    channel_input = str(data.get("channel") or "").strip()
+
+    if not channel_input:
+        return jsonify({
+            "success": False,
+            "message": "Pilih metode pembayaran terlebih dahulu."
+        }), 400
 
     field_id = data.get("field_id")
     tanggal = _parse_date(data.get("date"))
@@ -241,6 +287,18 @@ def confirm_reservation():
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 _expire_holds(cur)
+
+                cur.execute(SQL_CONFIRM_METHOD, (channel_input,))
+                method = cur.fetchone()
+
+                if method is None:
+                    return jsonify({
+                        "success": False,
+                        "message": (
+                            "Metode pembayaran tidak tersedia. "
+                            "Pilih metode lain."
+                        )
+                    }), 400
 
                 tariff = _get_tariff(
                     cur,
@@ -305,14 +363,16 @@ def confirm_reservation():
                         id_reservasi,
                         kode_transaksi,
                         metode_pembayaran,
+                        channel_pembayaran,
                         jumlah_pembayaran,
                         status_pembayaran
                     )
-                    VALUES (%s, %s, 'QRIS', %s, 'menunggu')
+                    VALUES (%s, %s, 'QRIS', %s, %s, 'menunggu')
                     RETURNING kode_transaksi;
                 """, (
                     reservation["id_reservasi"],
                     transaction_code,
+                    method["nama_ewallet"],
                     total
                 ))
 
@@ -352,6 +412,384 @@ def confirm_reservation():
         },
         "payment": {
             "transaction_code": payment["kode_transaksi"],
-            "amount": float(total)
+            "amount": float(total),
+            "channel": method["nama_ewallet"],
+            "method": {
+                "id": method["id_pengaturan"],
+                "ewallet": method["nama_ewallet"],
+                "pemilik": method["nama_pemilik"],
+                "nomor": method["nomor_akun"],
+                "qr_url": url_for(
+                    "payments.qr_image",
+                    method_id=method["id_pengaturan"]
+                )
+            }
         }
     }), 201
+
+
+# ======================================================================
+# LANGKAH 1: BUKTI PEMBAYARAN, RIWAYAT, DAN DETAIL RESERVASI
+# ======================================================================
+
+STATUS_RESERVASI_LABEL = {
+    "ditahan": "Menunggu pembayaran",
+    "menunggu": "Menunggu verifikasi",
+    "dikonfirmasi": "Dikonfirmasi",
+    "dibatalkan": "Dibatalkan",
+    "kedaluwarsa": "Kedaluwarsa",
+    "selesai": "Selesai",
+}
+
+STATUS_PEMBAYARAN_LABEL = {
+    "berhasil": "Terverifikasi",
+    "gagal": "Ditolak",
+    "kedaluwarsa": "Kedaluwarsa",
+}
+
+_RESERVATION_SELECT = """
+    SELECT
+        r.id_reservasi,
+        l.nama_lapangan,
+        r.tanggal,
+        r.jam_mulai,
+        r.jam_selesai,
+        r.durasi_jam,
+        r.harga_per_jam,
+        r.total_harga,
+        r.status_reservasi,
+        CASE
+            WHEN r.hold_expires_at IS NULL THEN NULL
+            ELSE GREATEST(
+                0,
+                EXTRACT(EPOCH FROM (r.hold_expires_at - NOW()))::int
+            )
+        END AS sisa_detik,
+        p.kode_transaksi,
+        p.status_pembayaran,
+        p.bukti_object_key,
+        p.catatan_admin,
+        p.channel_pembayaran,
+        p.diverifikasi_pada AT TIME ZONE 'Asia/Jakarta' AS diverifikasi_wib
+    FROM reservasi r
+    JOIN lapangan l ON l.id_lapangan = r.id_lapangan
+    LEFT JOIN LATERAL (
+        SELECT kode_transaksi, status_pembayaran,
+               bukti_object_key, catatan_admin,
+               channel_pembayaran, diverifikasi_pada
+        FROM pembayaran
+        WHERE id_reservasi = r.id_reservasi
+        ORDER BY id_pembayaran DESC
+        LIMIT 1
+    ) p ON TRUE
+"""
+
+
+@reservations_bp.app_template_filter("rupiah")
+def rupiah(value):
+    return "Rp" + "{:,.0f}".format(value or 0).replace(",", ".")
+
+
+@reservations_bp.app_errorhandler(413)
+def file_too_large(error):
+    return jsonify({
+        "success": False,
+        "message": "Ukuran file melebihi batas 5 MB."
+    }), 413
+
+
+def _decorate(row):
+    """Tambahkan label dan kelas CSS status untuk template."""
+    item = dict(row)
+
+    status = item["status_reservasi"]
+    payment_status = item["status_pembayaran"]
+    has_proof = bool(item["bukti_object_key"])
+
+    item["has_proof"] = has_proof
+    item["label_reservasi"] = STATUS_RESERVASI_LABEL.get(status, status)
+
+    if payment_status is None:
+        item["label_pembayaran"] = "-"
+        item["kelas_pembayaran"] = ""
+    elif payment_status == "menunggu":
+        # Pada tahap ini 'menunggu' berarti belum dibayar atau
+        # bukti sudah dikirim dan menunggu verifikasi admin.
+        if has_proof:
+            item["label_pembayaran"] = "Menunggu verifikasi"
+            item["kelas_pembayaran"] = "menunggu"
+        else:
+            item["label_pembayaran"] = "Belum dibayar"
+            item["kelas_pembayaran"] = "ditahan"
+    else:
+        item["label_pembayaran"] = STATUS_PEMBAYARAN_LABEL.get(
+            payment_status, payment_status
+        )
+        item["kelas_pembayaran"] = payment_status
+
+    return item
+
+
+@reservations_bp.route("/")
+@login_required_page
+def list_reservations():
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            _expire_holds(cur)
+
+            cur.execute(
+                _RESERVATION_SELECT
+                + " WHERE r.id_user = %s"
+                + " ORDER BY r.dibuat_pada DESC;",
+                (session["user_id"],)
+            )
+
+            rows = cur.fetchall()
+
+    return render_template(
+        "reservations/index.html",
+        reservations=[_decorate(row) for row in rows]
+    )
+
+
+@reservations_bp.route("/<int:reservation_id>")
+@login_required_page
+def reservation_detail(reservation_id):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            _expire_holds(cur)
+
+            cur.execute(
+                _RESERVATION_SELECT
+                + " WHERE r.id_reservasi = %s AND r.id_user = %s;",
+                (reservation_id, session["user_id"])
+            )
+
+            row = cur.fetchone()
+
+    if row is None:
+        abort(404)
+
+    return render_template(
+        "reservations/detail.html",
+        reservation=_decorate(row)
+    )
+
+
+SQL_ACTIVE_CHANNEL = """
+    SELECT nama_ewallet
+    FROM pengaturan_pembayaran
+    WHERE status_aktif = TRUE
+      AND LOWER(nama_ewallet) = LOWER(%s)
+    ORDER BY id_pengaturan
+    LIMIT 1;
+"""
+
+
+@reservations_bp.route("/<int:reservation_id>/payment", methods=["POST"])
+@login_required
+def upload_payment_proof(reservation_id):
+    uploaded = request.files.get("proof")
+
+    if uploaded is None or not uploaded.filename:
+        return jsonify({
+            "success": False,
+            "message": "Pilih file bukti pembayaran terlebih dahulu."
+        }), 400
+
+    data = uploaded.read()
+
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "File kosong."
+        }), 400
+
+    # Tipe file ditentukan dari isi file, bukan dari nama atau header.
+    mime_type = storage.detect_image_type(data)
+
+    if mime_type is None:
+        return jsonify({
+            "success": False,
+            "message": "Format file harus JPG, PNG, atau WebP."
+        }), 400
+
+    channel = (request.form.get("channel") or "").strip() or None
+    user_id = session["user_id"]
+    saved_key = None
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                _expire_holds(cur)
+
+                # Kunci baris reservasi agar upload ganda / kedaluwarsa
+                # tidak saling menimpa.
+                cur.execute("""
+                    SELECT status_reservasi
+                    FROM reservasi
+                    WHERE id_reservasi = %s
+                      AND id_user = %s
+                    FOR UPDATE;
+                """, (reservation_id, user_id))
+
+                reservation = cur.fetchone()
+
+                if reservation is None:
+                    return jsonify({
+                        "success": False,
+                        "message": "Reservasi tidak ditemukan."
+                    }), 404
+
+                status = reservation["status_reservasi"]
+
+                if status == "kedaluwarsa":
+                    return jsonify({
+                        "success": False,
+                        "message": (
+                            "Waktu pembayaran telah habis. "
+                            "Jadwal tidak lagi ditahan."
+                        )
+                    }), 409
+
+                if status != "ditahan":
+                    return jsonify({
+                        "success": False,
+                        "message": (
+                            "Bukti pembayaran sudah dikirim atau "
+                            "reservasi tidak dapat dibayar lagi."
+                        )
+                    }), 409
+
+                cur.execute("""
+                    SELECT id_pembayaran, channel_pembayaran
+                    FROM pembayaran
+                    WHERE id_reservasi = %s
+                      AND status_pembayaran = 'menunggu'
+                    ORDER BY id_pembayaran DESC
+                    LIMIT 1
+                    FOR UPDATE;
+                """, (reservation_id,))
+
+                payment = cur.fetchone()
+
+                if payment is None:
+                    return jsonify({
+                        "success": False,
+                        "message": "Data pembayaran tidak ditemukan."
+                    }), 409
+
+                if payment["channel_pembayaran"]:
+                    # Metode sudah dipilih saat konfirmasi; tidak diubah lagi.
+                    channel = payment["channel_pembayaran"]
+
+                elif channel is not None:
+                    cur.execute(SQL_ACTIVE_CHANNEL, (channel,))
+                    method = cur.fetchone()
+
+                    if method is None:
+                        return jsonify({
+                            "success": False,
+                            "message": "Metode pembayaran tidak valid."
+                        }), 400
+
+                    # Pakai penulisan resmi (mis. 'GoPay'), bukan input mentah.
+                    channel = method["nama_ewallet"]
+
+                try:
+                    saved_key = storage.save_payment_proof(data, mime_type)
+                except storage.StorageError as error:
+                    return jsonify({
+                        "success": False,
+                        "message": str(error)
+                    }), 503
+
+                cur.execute("""
+                    UPDATE pembayaran
+                    SET bukti_object_key = %s,
+                        channel_pembayaran = %s
+                    WHERE id_pembayaran = %s;
+                """, (saved_key, channel, payment["id_pembayaran"]))
+
+                # Constraint reservasi_check2: status selain 'ditahan'
+                # wajib hold_expires_at = NULL, jadi diubah bersamaan.
+                cur.execute("""
+                    UPDATE reservasi
+                    SET status_reservasi = 'menunggu',
+                        hold_expires_at = NULL
+                    WHERE id_reservasi = %s;
+                """, (reservation_id,))
+
+                cur.execute("""
+                    INSERT INTO reservasi_log (
+                        id_reservasi,
+                        id_user,
+                        status_sebelumnya,
+                        status_sesudahnya,
+                        keterangan
+                    )
+                    VALUES (%s, %s, 'ditahan', 'menunggu', %s);
+                """, (
+                    reservation_id,
+                    user_id,
+                    "Bukti pembayaran diunggah oleh pelanggan."
+                ))
+
+    except Exception:
+        # Jangan tinggalkan file yatim bila transaksi database gagal.
+        if saved_key:
+            storage.delete(saved_key)
+        raise
+
+    return jsonify({
+        "success": True,
+        "message": (
+            "Bukti pembayaran berhasil dikirim. "
+            "Menunggu verifikasi admin."
+        ),
+        "reservation": {
+            "id": reservation_id,
+            "status": "menunggu"
+        }
+    }), 200
+
+
+@reservations_bp.route("/<int:reservation_id>/payment-proof")
+@login_required_page
+def payment_proof(reservation_id):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT r.id_user, p.bukti_object_key
+                FROM reservasi r
+                JOIN pembayaran p ON p.id_reservasi = r.id_reservasi
+                WHERE r.id_reservasi = %s
+                  AND p.bukti_object_key IS NOT NULL
+                ORDER BY p.id_pembayaran DESC
+                LIMIT 1;
+            """, (reservation_id,))
+
+            row = cur.fetchone()
+
+    if row is None:
+        abort(404)
+
+    is_owner = row["id_user"] == session["user_id"]
+    is_admin = session.get("role") == "admin"
+
+    # 404 (bukan 403) agar keberadaan reservasi orang lain tidak bocor.
+    if not (is_owner or is_admin):
+        abort(404)
+
+    key = row["bukti_object_key"]
+
+    try:
+        url = storage.presigned_url(key)
+    except storage.StorageError:
+        abort(503)
+
+    # File dibaca langsung dari cloud lewat URL sementara (5 menit).
+    response = redirect(url, code=302)
+    response.headers["Cache-Control"] = "private, no-store"
+
+    return response

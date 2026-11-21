@@ -1,0 +1,101 @@
+{% extends "admin/layout.html" %}
+{% set active_menu = "reservations" %}
+
+{% block title %}Reservasi - Admin SportReserve{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+  <div class="container">
+    <div class="booking-header">
+      <span class="section-label">ADMIN</span>
+      <h1>Reservasi</h1>
+      <p>Daftar seluruh reservasi lapangan berdasarkan status.</p>
+    </div>
+
+    <nav class="admin-tabs">
+      {% for key, label in filters %}
+      <a
+        href="{{ url_for('admin.reservation_list', status=key) }}"
+        class="admin-tab{% if key == active_status %} active{% endif %}"
+      >
+        {{ label }}
+        <small>{{ total if key == "semua" else counts.get(key, 0) }}</small>
+      </a>
+      {% endfor %}
+    </nav>
+
+    {% if reservations %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Pelanggan</th>
+            <th>Lapangan</th>
+            <th>Jadwal</th>
+            <th>Total</th>
+            <th>Reservasi</th>
+            <th>Pembayaran</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in reservations %}
+          <tr>
+            <td>
+              <strong>{{ item.kode_transaksi or "-" }}</strong><br />
+              <small>{{ item.dibuat_wib.strftime("%d-%m-%Y %H:%M") }}</small>
+            </td>
+            <td>
+              {{ item.nama_pelanggan }}<br />
+              <small>{{ item.no_telepon or item.email }}</small>
+            </td>
+            <td>{{ item.nama_lapangan }}</td>
+            <td>
+              {{ item.tanggal.strftime("%d-%m-%Y") }}<br />
+              <small>
+                {{ item.jam_mulai.strftime("%H:%M") }} -
+                {{ item.jam_selesai.strftime("%H:%M") }}
+              </small>
+            </td>
+            <td>{{ item.total_harga|rupiah }}</td>
+            <td>
+              <span class="status-badge status-{{ item.status_reservasi }}">
+                {{ item.label_reservasi }}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge status-{{ item.kelas_pembayaran }}">
+                {{ item.label_pembayaran }}
+              </span>
+            </td>
+            <td>
+              <a
+                class="btn-secondary admin-btn-small"
+                href="{{ url_for('admin.reservation_detail', reservation_id=item.id_reservasi) }}"
+              >
+                {{ "Tinjau" if item.status_reservasi == "menunggu" else "Detail" }}
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if reservations|length >= list_limit %}
+    <p class="admin-note">
+      Menampilkan {{ list_limit }} reservasi terbaru. Gunakan filter status
+      untuk mempersempit daftar.
+    </p>
+    {% endif %}
+    {% else %}
+    <div class="field-empty">
+      <div class="field-empty-icon">✅</div>
+      <h3>Tidak ada reservasi pada filter ini</h3>
+      <p>Pilih filter status lain untuk melihat reservasi yang ada.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

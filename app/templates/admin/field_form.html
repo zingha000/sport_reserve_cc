@@ -1,0 +1,255 @@
+{% extends "admin/layout.html" %}
+{% set active_menu = "fields" %}
+
+{% block title %}{{ "Kelola " ~ field.nama_lapangan if field else "Tambah Lapangan" }} - SportReserve{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+  <div class="container">
+    <a href="{{ url_for('admin_fields.list_fields') }}" class="back-link">
+      ← Kembali ke Daftar Lapangan
+    </a>
+
+    <div class="booking-header">
+      <span class="section-label">{{ "KELOLA LAPANGAN" if field else "LAPANGAN BARU" }}</span>
+      <h1>{{ field.nama_lapangan if field else "Tambah Lapangan" }}</h1>
+      {% if not field %}
+      <p>Isi data dasar dulu. Jam operasional dan tarif diatur setelah lapangan tersimpan.</p>
+      {% endif %}
+    </div>
+
+    <div class="payment-status-card">
+      <h3>Data Lapangan</h3>
+
+      <form
+        id="fieldForm"
+        data-mode="{{ 'update' if field else 'create' }}"
+        data-url="{{ url_for('admin_fields.update_field', field_id=field.id_lapangan) if field else url_for('admin_fields.create_field') }}"
+      >
+        <div class="admin-field">
+          <label for="fieldName">Nama lapangan</label>
+          <input
+            id="fieldName"
+            type="text"
+            maxlength="100"
+            required
+            value="{{ field.nama_lapangan if field else '' }}"
+            placeholder="Contoh: Lapangan Futsal A"
+          />
+        </div>
+
+        <div class="admin-field">
+          <label for="fieldSize">Ukuran / luas (opsional)</label>
+          <input
+            id="fieldSize"
+            type="text"
+            maxlength="50"
+            value="{{ field.luas_lapangan or '' if field else '' }}"
+            placeholder="Contoh: 25 x 15 m"
+          />
+        </div>
+
+        <div class="admin-field">
+          <label for="fieldDescription">Deskripsi (opsional)</label>
+          <textarea
+            id="fieldDescription"
+            rows="4"
+            maxlength="2000"
+            placeholder="Lantai, fasilitas, dan informasi lain untuk pelanggan."
+          >{{ field.deskripsi or '' if field else '' }}</textarea>
+        </div>
+
+        <div class="auth-message" data-message hidden></div>
+
+        <div class="admin-actions">
+          <button type="submit" class="btn-primary">
+            {{ "Simpan Perubahan" if field else "Buat Lapangan" }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    {% if field %}
+    <div class="payment-status-card admin-card-gap">
+      <h3>Status Lapangan</h3>
+      <div class="summary-row">
+        <span>Status saat ini</span>
+        <span class="status-badge status-{{ 'dikonfirmasi' if field.status == 'aktif' else 'dibatalkan' }}">
+          {{ "Aktif" if field.status == "aktif" else "Nonaktif" }}
+        </span>
+      </div>
+      <p class="admin-note">
+        Hanya lapangan aktif yang tampil dan bisa dipesan pelanggan. Untuk
+        diaktifkan, lapangan harus punya jam operasional dan tarif berlaku.
+        Menonaktifkan tidak membatalkan reservasi yang sudah ada.
+      </p>
+
+      <div class="auth-message" data-message hidden></div>
+
+      <div class="admin-actions">
+        <button
+          type="button"
+          class="{{ 'btn-secondary admin-danger' if field.status == 'aktif' else 'btn-primary' }}"
+          id="statusButton"
+          data-url="{{ url_for('admin_fields.set_status', field_id=field.id_lapangan) }}"
+          data-next="{{ 'nonaktif' if field.status == 'aktif' else 'aktif' }}"
+        >
+          {{ "Nonaktifkan Lapangan" if field.status == "aktif" else "Aktifkan Lapangan" }}
+        </button>
+      </div>
+    </div>
+
+    <div class="payment-status-card admin-card-gap">
+      <h3>Jam Operasional</h3>
+      <p class="admin-note">
+        Hari yang tidak dicentang dianggap tutup. Jam tutup maksimal 23:59.
+      </p>
+
+      <form
+        id="hoursForm"
+        data-url="{{ url_for('admin_fields.save_hours', field_id=field.id_lapangan) }}"
+      >
+        <div class="admin-hours">
+          {% for day, name in days %}
+          {% set h = hours.get(day) %}
+          <div class="admin-hours-row" data-day="{{ day }}">
+            <label class="admin-check">
+              <input
+                type="checkbox"
+                class="hour-active"
+                {% if (h and h.status) or not hours %}checked{% endif %}
+              />
+              {{ name }}
+            </label>
+            <input
+              type="time"
+              class="hour-open"
+              value="{{ h.jam_buka.strftime('%H:%M') if h else '08:00' }}"
+              aria-label="Jam buka {{ name }}"
+            />
+            <span>sampai</span>
+            <input
+              type="time"
+              class="hour-close"
+              value="{{ h.jam_tutup.strftime('%H:%M') if h else '22:00' }}"
+              aria-label="Jam tutup {{ name }}"
+            />
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="auth-message" data-message hidden></div>
+
+        <div class="admin-actions">
+          <button type="submit" class="btn-primary">Simpan Jam Operasional</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="payment-status-card admin-card-gap">
+      <h3>Tarif</h3>
+
+      {% if tariffs %}
+      <div class="admin-table-wrap admin-card-gap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Hari</th>
+              <th>Jam</th>
+              <th>Harga / jam</th>
+              <th>Berlaku</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tariffs %}
+            <tr>
+              <td>{{ days[t.hari - 1][1] }}</td>
+              <td>{{ t.jam_mulai.strftime("%H:%M") }} - {{ t.jam_selesai.strftime("%H:%M") }}</td>
+              <td>{{ t.harga_per_jam|rupiah }}</td>
+              <td>
+                {{ t.berlaku_mulai.strftime("%d-%m-%Y") }} s/d
+                {{ t.berlaku_sampai.strftime("%d-%m-%Y") if t.berlaku_sampai else "seterusnya" }}
+                {% if not t.sedang_berlaku %}<br /><small>(tidak sedang berlaku)</small>{% endif %}
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="btn-secondary admin-btn-small admin-danger"
+                  data-delete-tariff
+                  data-url="{{ url_for('admin_fields.delete_tariff', field_id=field.id_lapangan, tariff_id=t.id_tarif) }}"
+                >
+                  Hapus
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="auth-message" data-message data-for="tariff-list" hidden></div>
+      {% else %}
+      <p class="admin-note">Belum ada tarif.</p>
+      {% endif %}
+
+      <h3 class="admin-subtitle">Tambah Tarif</h3>
+      <p class="admin-note">
+        Satu tarif harus mencakup seluruh jam sewa. Misalnya sewa 18:00-20:00
+        butuh tarif yang menutup 18:00 sampai 20:00. Tarif pada hari dan jam
+        yang sama tidak boleh tumpang tindih.
+      </p>
+
+      <form
+        id="tariffForm"
+        data-url="{{ url_for('admin_fields.add_tariff', field_id=field.id_lapangan) }}"
+      >
+        <div class="admin-field">
+          <label>Hari</label>
+          <div class="admin-days">
+            {% for day, name in days %}
+            <label class="admin-check">
+              <input type="checkbox" name="hari" value="{{ day }}" checked />
+              {{ name }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="admin-form-grid">
+          <div class="admin-field">
+            <label for="tariffStart">Jam mulai</label>
+            <input id="tariffStart" type="time" value="08:00" required />
+          </div>
+          <div class="admin-field">
+            <label for="tariffEnd">Jam selesai</label>
+            <input id="tariffEnd" type="time" value="22:00" required />
+          </div>
+          <div class="admin-field">
+            <label for="tariffPrice">Harga per jam (Rp)</label>
+            <input id="tariffPrice" type="number" min="1" step="1000" required placeholder="100000" />
+          </div>
+          <div class="admin-field">
+            <label for="tariffFrom">Berlaku mulai</label>
+            <input id="tariffFrom" type="date" required />
+          </div>
+          <div class="admin-field">
+            <label for="tariffUntil">Berlaku sampai (kosong = seterusnya)</label>
+            <input id="tariffUntil" type="date" />
+          </div>
+        </div>
+
+        <div class="auth-message" data-message hidden></div>
+
+        <div class="admin-actions">
+          <button type="submit" class="btn-primary">Tambah Tarif</button>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin-fields.js') }}"></script>
+{% endblock %}

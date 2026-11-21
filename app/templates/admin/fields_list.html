@@ -1,0 +1,73 @@
+{% extends "admin/layout.html" %}
+{% set active_menu = "fields" %}
+
+{% block title %}Kelola Lapangan - SportReserve{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+  <div class="container">
+    <div class="admin-header-row">
+      <div class="booking-header">
+        <span class="section-label">ADMIN</span>
+        <h1>Kelola Lapangan</h1>
+        <p>Tambah lapangan, atur jam operasional, dan tentukan tarif.</p>
+      </div>
+
+      <a href="{{ url_for('admin_fields.new_field') }}" class="btn-primary">
+        + Tambah Lapangan
+      </a>
+    </div>
+
+    {% if fields %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Lapangan</th>
+            <th>Status</th>
+            <th>Tarif terendah</th>
+            <th>Hari buka</th>
+            <th>Reservasi mendatang</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in fields %}
+          <tr>
+            <td>
+              <strong>{{ item.nama_lapangan }}</strong><br />
+              <small>{{ item.luas_lapangan or "-" }}</small>
+            </td>
+            <td>
+              <span class="status-badge status-{{ 'dikonfirmasi' if item.status == 'aktif' else 'dibatalkan' }}">
+                {{ "Aktif" if item.status == "aktif" else "Nonaktif" }}
+              </span>
+            </td>
+            <td>
+              {% if item.harga_terendah %}{{ item.harga_terendah|rupiah }} / jam{% else %}-{% endif %}
+            </td>
+            <td>{{ item.hari_buka }} hari</td>
+            <td>{{ item.reservasi_aktif }}</td>
+            <td>
+              <a
+                class="btn-secondary admin-btn-small"
+                href="{{ url_for('admin_fields.edit_field', field_id=item.id_lapangan) }}"
+              >
+                Kelola
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="field-empty">
+      <div class="field-empty-icon">⚽</div>
+      <h3>Belum ada lapangan</h3>
+      <p>Klik "Tambah Lapangan" untuk membuat lapangan pertama.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

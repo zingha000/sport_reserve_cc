@@ -1,46 +1,48 @@
-
 from flask import Blueprint, render_template, abort
 from app.database import get_db_connection
 
 fields_bp = Blueprint("fields", __name__, url_prefix="/fields")
 
+TODAY_WIB = "(NOW() AT TIME ZONE 'Asia/Jakarta')::date"
+
+SQL_ACTIVE_FIELDS = """
+    SELECT
+        l.id_lapangan,
+        l.nama_lapangan,
+        l.deskripsi,
+        l.luas_lapangan,
+        l.status,
+        MIN(tl.harga_per_jam) AS harga_terendah
+    FROM lapangan l
+    JOIN tarif_lapangan tl
+        ON l.id_lapangan = tl.id_lapangan
+        AND tl.berlaku_mulai <= {today}
+        AND (
+            tl.berlaku_sampai IS NULL
+            OR tl.berlaku_sampai >= {today}
+        )
+    WHERE l.status = 'aktif'
+    GROUP BY
+        l.id_lapangan,
+        l.nama_lapangan,
+        l.deskripsi,
+        l.luas_lapangan,
+        l.status
+    ORDER BY l.id_lapangan
+""".format(today=TODAY_WIB)
+
 
 def get_fields():
     """
-    Mengambil data lapangan aktif dari PostgreSQL.
-    Harga yang ditampilkan merupakan tarif terendah
-    yang sedang berlaku untuk setiap lapangan.
-    """
-
-    query = """
-        SELECT
-            l.id_lapangan,
-            l.nama_lapangan,
-            l.deskripsi,
-            l.luas_lapangan,
-            l.status,
-            MIN(tl.harga_per_jam) AS harga_terendah
-        FROM lapangan l
-        LEFT JOIN tarif_lapangan tl
-            ON l.id_lapangan = tl.id_lapangan
-            AND tl.berlaku_mulai <= CURRENT_DATE
-            AND (
-                tl.berlaku_sampai IS NULL
-                OR tl.berlaku_sampai >= CURRENT_DATE
-            )
-        WHERE l.status = 'aktif'
-        GROUP BY
-            l.id_lapangan,
-            l.nama_lapangan,
-            l.deskripsi,
-            l.luas_lapangan,
-            l.status
-        ORDER BY l.id_lapangan
+    Mengambil lapangan aktif yang punya tarif berlaku hari ini (WIB).
+    Harga yang ditampilkan adalah tarif terendah yang sedang berlaku.
+    Lapangan nonaktif, atau aktif tetapi belum punya tarif berlaku,
+    tidak ditampilkan karena memang tidak bisa dipesan.
     """
 
     with get_db_connection() as conn:
         with conn.cursor() as cursor:
-            cursor.execute(query)
+            cursor.execute(SQL_ACTIVE_FIELDS)
             rows = cursor.fetchall()
 
     fields = []
@@ -50,12 +52,8 @@ def get_fields():
             "id": row["id_lapangan"],
             "name": row["nama_lapangan"],
             "location": "Bandung",
-            "type": "Informasi belum tersedia",
-            "price": (
-                int(row["harga_terendah"])
-                if row["harga_terendah"] is not None
-                else 0
-            ),
+            "type": row["luas_lapangan"] or "Lapangan Futsal",
+            "price": int(row["harga_terendah"]),
             "status": "Tersedia",
             "image": None,
             "description": (

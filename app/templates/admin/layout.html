@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>{% block title %}Admin - SportReserve{% endblock %}</title>
+
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/style.css') }}"
+  />
+  {% block styles %}{% endblock %}
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <a href="{{ url_for('admin.dashboard') }}" class="admin-brand">
+        SportReserve
+        <small>Panel Admin</small>
+      </a>
+
+      <nav class="admin-nav">
+        <a
+          href="{{ url_for('admin.dashboard') }}"
+          class="admin-nav-link{% if active_menu == 'dashboard' %} active{% endif %}"
+        >
+          <span class="admin-nav-icon">▦</span> Dashboard
+        </a>
+        <a
+          href="{{ url_for('admin.reservation_list') }}"
+          class="admin-nav-link{% if active_menu == 'reservations' %} active{% endif %}"
+        >
+          <span class="admin-nav-icon">☰</span> Reservasi
+        </a>
+        <a
+          href="{{ url_for('admin_fields.list_fields') }}"
+          class="admin-nav-link{% if active_menu == 'fields' %} active{% endif %}"
+        >
+          <span class="admin-nav-icon">⚽</span> Lapangan
+        </a>
+        <a
+          href="{{ url_for('admin_payments.list_admin') }}"
+          class="admin-nav-link{% if active_menu == 'payments' %} active{% endif %}"
+        >
+          <span class="admin-nav-icon">◎</span> Pembayaran
+        </a>
+      </nav>
+
+      <div class="admin-sidebar-foot">
+        <a href="{{ url_for('home') }}" class="admin-nav-link">
+          <span class="admin-nav-icon">↗</span> Lihat Situs
+        </a>
+        <div class="admin-user">
+          <span>{{ session.get('nama') }}</span>
+          <small>Administrator</small>
+        </div>
+        <button type="button" class="admin-logout" data-logout>Keluar</button>
+      </div>
+    </aside>
+
+    <div class="admin-main">
+      <main class="admin-content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("click", async function (event) {
+      const button = event.target.closest("[data-logout]");
+      if (!button) return;
+
+      button.disabled = true;
+
+      try {
+        await fetch("{{ url_for('auth.logout') }}", { method: "POST" });
+      } finally {
+        window.location.href = "{{ url_for('home') }}";
+      }
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

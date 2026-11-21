@@ -1,0 +1,111 @@
+{% extends "admin/layout.html" %}
+{% set active_menu = "payments" %}
+
+{% block title %}Pembayaran QRIS - Admin SportReserve{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+  <div class="container">
+    <div class="booking-header">
+      <span class="section-label">ADMIN</span>
+      <h1>Pembayaran QRIS</h1>
+      <p>
+        Unggah QRIS merchant OVO, GoPay, atau lainnya. Pelanggan memilih salah
+        satu saat membayar, lalu mengunggah bukti. QRIS statis tidak membawa
+        nominal, jadi pelanggan melihat total dan kode transaksi di layar.
+      </p>
+    </div>
+
+    {% if methods %}
+    <div class="admin-qr-grid">
+      {% for item in methods %}
+      <div class="admin-qr-card{% if not item.status_aktif %} is-off{% endif %}">
+        <img
+          class="admin-qr-preview"
+          src="{{ url_for('payments.qr_image', method_id=item.id_pengaturan) }}"
+          alt="QRIS {{ item.nama_ewallet }}"
+        />
+        <div class="admin-qr-info">
+          <strong>{{ item.nama_ewallet }}</strong>
+          <span>{{ item.nama_pemilik }}</span>
+          {% if item.nomor_akun %}<small>{{ item.nomor_akun }}</small>{% endif %}
+          <span class="status-badge status-{{ 'dikonfirmasi' if item.status_aktif else 'dibatalkan' }}">
+            {{ "Aktif" if item.status_aktif else "Nonaktif" }}
+          </span>
+        </div>
+        <div class="admin-actions">
+          <button
+            type="button"
+            class="btn-secondary admin-btn-small"
+            data-toggle-method
+            data-url="{{ url_for('admin_payments.toggle_method', method_id=item.id_pengaturan) }}"
+          >
+            {{ "Nonaktifkan" if item.status_aktif else "Aktifkan" }}
+          </button>
+          <button
+            type="button"
+            class="btn-secondary admin-btn-small admin-danger"
+            data-delete-method
+            data-url="{{ url_for('admin_payments.delete_method', method_id=item.id_pengaturan) }}"
+          >
+            Hapus
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="auth-message" id="listMessage" hidden></div>
+    {% else %}
+    <div class="field-empty">
+      <div class="field-empty-icon">◎</div>
+      <h3>Belum ada QRIS</h3>
+      <p>Tambahkan QRIS pertama di bawah supaya pelanggan bisa membayar.</p>
+    </div>
+    {% endif %}
+
+    <div class="payment-status-card admin-card-gap">
+      <h3>Tambah QRIS</h3>
+
+      <form
+        id="methodForm"
+        data-url="{{ url_for('admin_payments.create_method') }}"
+      >
+        <div class="admin-form-grid">
+          <div class="admin-field">
+            <label for="methodWallet">E-wallet</label>
+            <select id="methodWallet" required>
+              {% for name in ewallets %}
+              <option value="{{ name }}">{{ name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="admin-field">
+            <label for="methodOwner">Nama merchant</label>
+            <input id="methodOwner" type="text" maxlength="100" required placeholder="Contoh: SportReserve Futsal" />
+          </div>
+          <div class="admin-field">
+            <label for="methodNumber">Nomor akun (opsional)</label>
+            <input id="methodNumber" type="text" maxlength="50" placeholder="08xxxxxxxxxx" />
+          </div>
+        </div>
+
+        <div class="admin-field">
+          <label for="methodQr">Gambar QRIS</label>
+          <input id="methodQr" type="file" accept="image/png,image/jpeg,image/webp" required />
+          <small class="admin-note">JPG, PNG, atau WebP, maksimal 5 MB. Gambar disimpan di cloud storage.</small>
+        </div>
+
+        <div class="auth-message" data-message hidden></div>
+
+        <div class="admin-actions">
+          <button type="submit" class="btn-primary">Tambah QRIS</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin-payments.js') }}"></script>
+{% endblock %}

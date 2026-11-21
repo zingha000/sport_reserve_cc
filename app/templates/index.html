@@ -1,162 +1,65 @@
-
 {% extends "base.html" %}
 
-{% block title %}SportReserve - Booking Lapangan Futsal{% endblock %}
+{% block title %}SportReserve - Reservasi Lapangan Futsal{% endblock %}
 
 {% block content %}
+<section class="listing-hero">
+  <div class="container">
+    <span class="section-label">RESERVASI LAPANGAN FUTSAL</span>
+    <h1>Booking Lapangan Futsal, Tanpa Ribet.</h1>
+    <p>
+      Pilih lapangan, cek jadwal yang tersedia, bayar lewat QRIS, lalu
+      tunggu konfirmasi. Semua dari satu tempat.
+    </p>
 
-<!-- HERO SECTION -->
-<section class="hero">
-    <div class="container hero-content">
-        <div class="hero-text">
-            <span class="hero-label">BOOK YOUR GAME, PLAY YOUR WAY</span>
-
-            <h1>
-                Temukan Lapangan.
-                <span>Mulai Pertandingan.</span>
-            </h1>
-
-            <p>
-                Pesan lapangan futsal favoritmu dengan mudah.
-                Pilih jadwal, tentukan lapangan, dan nikmati
-                pertandingan tanpa repot.
-            </p>
-
-            <div class="hero-actions">
-                <a href="#lapangan" class="btn-primary">
-                    Cari Lapangan
-                </a>
-                <a href="#cara-kerja" class="btn-secondary">
-                    Cara Kerja
-                </a>
-            </div>
-
-            <div class="hero-note">
-                <span>✓</span>
-                Booking lebih mudah, bermain lebih nyaman.
-            </div>
-        </div>
-
-        <div class="hero-visual">
-            <div class="court-card">
-                <div class="court-top">
-                    <span>SPORTRESERVE</span>
-                    <span>01 / PLAY</span>
-                </div>
-
-                <div class="court">
-                    <div class="court-center"></div>
-                    <div class="court-circle"></div>
-                    <div class="court-box court-box-left"></div>
-                    <div class="court-box court-box-right"></div>
-                </div>
-
-                <div class="court-bottom">
-                    <span>YOUR GAME STARTS HERE</span>
-                    <span>⚽</span>
-                </div>
-            </div>
-        </div>
+    <div class="admin-actions">
+      <a href="{{ url_for('fields.list_fields') }}" class="btn-primary">
+        Lihat Lapangan
+      </a>
+      {% if session.get("user_id") %}
+      <a href="{{ url_for('reservations.list_reservations') }}" class="btn-secondary">
+        Reservasi Saya
+      </a>
+      {% else %}
+      <a href="{{ url_for('auth.register_page') }}" class="btn-secondary">
+        Daftar Gratis
+      </a>
+      {% endif %}
     </div>
+  </div>
 </section>
 
-<!-- BENEFIT SECTION -->
-<section class="benefits">
-    <div class="container benefits-grid">
-        <div class="benefit-item">
-            <span class="benefit-number">01</span>
-            <h3>Pilih Lapangan</h3>
-            <p>Temukan lapangan sesuai kebutuhan bermainmu.</p>
-        </div>
-
-        <div class="benefit-item">
-            <span class="benefit-number">02</span>
-            <h3>Tentukan Jadwal</h3>
-            <p>Pilih tanggal dan waktu pertandingan.</p>
-        </div>
-
-        <div class="benefit-item">
-            <span class="benefit-number">03</span>
-            <h3>Konfirmasi Booking</h3>
-            <p>Selesaikan pembayaran dan tunggu verifikasi.</p>
-        </div>
+<section class="listing-section">
+  <div class="container">
+    <div class="listing-toolbar">
+      <div>
+        <h2>Cara Memesan</h2>
+        <p>Empat langkah dari memilih jadwal sampai dikonfirmasi.</p>
+      </div>
     </div>
-</section>
 
-<!-- FIELD SECTION -->
-<section class="field-section" id="lapangan">
-    <div class="container">
-        <div class="section-heading">
-            <div>
-                <span class="section-label">OUR PLAYING SPACE</span>
-                <h2>Temukan Lapangan Favoritmu</h2>
-                <p>Pilih lapangan yang sesuai dengan kebutuhan pertandinganmu.</p>
-            </div>
-
-            <span class="coming-soon">Daftar lapangan segera tersedia</span>
-        </div>
-
-        <div class="field-empty">
-            <div class="field-empty-icon">⚽</div>
-            <h3>Lapangan akan segera hadir</h3>
-            <p>
-                Informasi lapangan, fasilitas, harga, dan jadwal
-                akan ditampilkan di bagian ini.
-            </p>
-        </div>
+    <div class="admin-stats">
+      <div class="admin-stat">
+        <span>Langkah 1</span>
+        <strong>Pilih</strong>
+        <small>Pilih lapangan dan lihat jadwal yang masih kosong.</small>
+      </div>
+      <div class="admin-stat">
+        <span>Langkah 2</span>
+        <strong>Tahan</strong>
+        <small>Jadwal ditahan 10 menit selama Anda membayar.</small>
+      </div>
+      <div class="admin-stat">
+        <span>Langkah 3</span>
+        <strong>Bayar</strong>
+        <small>Bayar lewat QRIS dan unggah bukti pembayaran.</small>
+      </div>
+      <div class="admin-stat">
+        <span>Langkah 4</span>
+        <strong>Konfirmasi</strong>
+        <small>Admin memeriksa bukti dan mengonfirmasi reservasi.</small>
+      </div>
     </div>
+  </div>
 </section>
-
-<!-- HOW IT WORKS -->
-<section class="how-section" id="cara-kerja">
-    <div class="container">
-        <div class="section-heading">
-            <div>
-                <span class="section-label">SIMPLE BOOKING PROCESS</span>
-                <h2>Booking dalam Beberapa Langkah</h2>
-                <p>Proses pemesanan yang sederhana dan mudah dipahami.</p>
-            </div>
-        </div>
-
-        <div class="steps-grid">
-            <div class="step-card">
-                <span>01</span>
-                <h3>Buat Akun</h3>
-                <p>Daftar dan masuk untuk mulai menggunakan SportReserve.</p>
-            </div>
-
-            <div class="step-card">
-                <span>02</span>
-                <h3>Pilih Jadwal</h3>
-                <p>Tentukan lapangan, tanggal, dan durasi bermain.</p>
-            </div>
-
-            <div class="step-card">
-                <span>03</span>
-                <h3>Lakukan Pembayaran</h3>
-                <p>Gunakan QRIS dan unggah bukti pembayaran.</p>
-            </div>
-
-            <div class="step-card">
-                <span>04</span>
-                <h3>Siap Bermain</h3>
-                <p>Pantau status reservasi setelah pembayaran diverifikasi.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- CTA SECTION -->
-<section class="cta-section" id="tentang">
-    <div class="container cta-content">
-        <div>
-            <span class="section-label">LET'S PLAY TOGETHER</span>
-            <h2>Pertandinganmu Dimulai dari Sini.</h2>
-            <p>SportReserve membantu proses pemesanan lapangan menjadi lebih praktis.</p>
-        </div>
-
-        <a href="#" class="btn-cta">Mulai Booking</a>
-    </div>
-</section>
-
 {% endblock %}
