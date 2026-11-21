@@ -168,6 +168,18 @@ def read_object(key):
     return obj["Body"].read(), obj.get("ContentType") or "application/octet-stream"
 
 
+def ping():
+    """Pastikan bucket dapat diakses untuk health check."""
+    _run(
+        "ping",
+        _client().list_objects_v2,
+        Bucket=_bucket(),
+        MaxKeys=1,
+    )
+
+    return True
+
+
 def exists(key):
     try:
         _client().head_object(Bucket=_bucket(), Key=str(key))

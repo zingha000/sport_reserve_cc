@@ -13,6 +13,53 @@ class Config:
     DEBUG = os.getenv("FLASK_DEBUG", "True").lower() == "true"
 
     DATABASE_URL = os.getenv("DATABASE_URL")
+    DATABASE_URL_DIRECT = os.getenv("DATABASE_URL_DIRECT")
+
+    # Pool koneksi aplikasi. Aplikasi memakai DATABASE_URL ber-"-pooler";
+    # DATABASE_URL_DIRECT hanya untuk migrasi/skrip administratif.
+    try:
+        DB_POOL_MAX = max(int(os.getenv("DB_POOL_MAX", "5")), 1)
+    except ValueError:
+        DB_POOL_MAX = 5
+
+    try:
+        DB_POOL_TIMEOUT = max(float(os.getenv("DB_POOL_TIMEOUT", "3")), 1)
+    except ValueError:
+        DB_POOL_TIMEOUT = 3
+
+    try:
+        DB_CONNECT_TIMEOUT = max(int(os.getenv("DB_CONNECT_TIMEOUT", "10")), 1)
+    except ValueError:
+        DB_CONNECT_TIMEOUT = 10
+
+    try:
+        DB_PROBE_TIMEOUT = max(float(os.getenv("DB_PROBE_TIMEOUT", "2")), 1)
+    except ValueError:
+        DB_PROBE_TIMEOUT = 2
+
+    try:
+        DB_ACQUIRE_BUDGET = max(
+            float(os.getenv("DB_ACQUIRE_BUDGET", "6")), 1
+        )
+    except ValueError:
+        DB_ACQUIRE_BUDGET = 6
+
+    try:
+        DB_BREAKER_SECONDS = max(
+            float(os.getenv("DB_BREAKER_SECONDS", "15")), 0
+        )
+    except ValueError:
+        DB_BREAKER_SECONDS = 15
+
+    try:
+        DB_BREAKER_PERMANENT_SECONDS = max(
+            float(os.getenv("DB_BREAKER_PERMANENT_SECONDS", "30")), 0
+        )
+    except ValueError:
+        DB_BREAKER_PERMANENT_SECONDS = 30
+
+    DB_LOCK_TIMEOUT = os.getenv("DB_LOCK_TIMEOUT", "3s")
+    DB_STATEMENT_TIMEOUT = os.getenv("DB_STATEMENT_TIMEOUT", "10s")
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

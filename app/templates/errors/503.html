@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title|default("Layanan Sedang Sibuk") }} - SportReserve{% endblock %}
+
+{% block content %}
+<section class="container" style="padding: 80px 20px; text-align: center;">
+  <h1>{{ title|default("Layanan Sedang Sibuk") }}</h1>
+  <p>{{ message|default("Layanan sedang sibuk. Coba lagi dalam beberapa detik.") }}</p>
+  <button type="button" class="btn-register" onclick="window.location.reload()">
+    Muat ulang
+  </button>
+</section>
+{% endblock %}

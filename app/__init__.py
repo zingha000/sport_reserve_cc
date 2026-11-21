@@ -1,5 +1,6 @@
 from flask import Flask, render_template
 from app.config import Config
+from app.errors import register_error_handlers
 
 
 def create_app():
@@ -14,6 +15,7 @@ def create_app():
     from app.routes.admin_fields import admin_fields_bp
     from app.routes.payments import payments_bp, admin_payments_bp
     from app.routes.notifications import notifications_bp
+    from app.routes.health import health_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(fields_bp)
@@ -23,6 +25,9 @@ def create_app():
     app.register_blueprint(payments_bp)
     app.register_blueprint(admin_payments_bp)
     app.register_blueprint(notifications_bp)
+    app.register_blueprint(health_bp)
+
+    register_error_handlers(app)
 
     # Landing Page
     @app.route("/")
