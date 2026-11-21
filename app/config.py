@@ -61,6 +61,11 @@ class Config:
     DB_LOCK_TIMEOUT = os.getenv("DB_LOCK_TIMEOUT", "3s")
     DB_STATEMENT_TIMEOUT = os.getenv("DB_STATEMENT_TIMEOUT", "10s")
 
+    try:
+        MAX_ACTIVE_HOLDS = max(int(os.getenv("MAX_ACTIVE_HOLDS", "2")), 1)
+    except ValueError:
+        MAX_ACTIVE_HOLDS = 2
+
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = not DEBUG

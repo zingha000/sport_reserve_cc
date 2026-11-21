@@ -1,4 +1,4 @@
-﻿from datetime import date, time, datetime, timedelta
+from datetime import date, time, datetime, timedelta
 from decimal import Decimal
 import secrets
 
@@ -10,7 +10,8 @@ from flask import (
     session,
     redirect,
     url_for,
-    abort
+    abort,
+    current_app
 )
 from psycopg.errors import ExclusionViolation
 
@@ -25,8 +26,6 @@ reservations_bp = Blueprint(
 )
 
 HOLD_MINUTES = 10
-
-ACTIVE_STATUSES = ("ditahan", "menunggu", "dikonfirmasi")
 
 
 def _parse_date(value):
@@ -152,6 +151,28 @@ def check_availability(field_id):
         with conn.cursor() as cur:
             _expire_holds(cur)
 
+            cur.execute(
+                "SELECT status FROM lapangan WHERE id_lapangan = %s;",
+                (field_id,)
+            )
+
+            field = cur.fetchone()
+
+            if field is None:
+                return jsonify({
+                    "success": False,
+                    "message": "Lapangan tidak ditemukan."
+                }), 404
+
+            if field["status"] != "aktif":
+                return jsonify({
+                    "success": True,
+                    "is_open": False,
+                    "message": "Lapangan sedang tidak tersedia.",
+                    "operational": None,
+                    "reservations": []
+                }), 200
+
             cur.execute("""
                 SELECT jam_buka, jam_tutup
                 FROM jam_operasional
@@ -165,7 +186,6 @@ def check_availability(field_id):
             operational = cur.fetchone()
 
             if operational is None:
-                conn.rollback()
                 return jsonify({
                     "success": True,
                     "is_open": False,
@@ -179,13 +199,15 @@ def check_availability(field_id):
                 FROM reservasi
                 WHERE id_lapangan = %s
                   AND tanggal = %s
-                  AND status_reservasi = ANY(%s)
                   AND (
-                      status_reservasi <> 'ditahan'
-                      OR hold_expires_at > NOW()
+                      status_reservasi IN ('menunggu', 'dikonfirmasi')
+                      OR (
+                          status_reservasi = 'ditahan'
+                          AND hold_expires_at > NOW()
+                      )
                   )
                 ORDER BY jam_mulai;
-            """, (field_id, tanggal, list(ACTIVE_STATUSES)))
+            """, (field_id, tanggal))
 
             reservations = cur.fetchall()
 
@@ -215,6 +237,60 @@ SQL_CONFIRM_METHOD = """
     ORDER BY id_pengaturan
     LIMIT 1;
 """
+
+SQL_IDEMPOTENT_HOLD = """
+    SELECT
+        r.id_reservasi,
+        r.hold_expires_at,
+        r.total_harga,
+        l.nama_lapangan,
+        p.kode_transaksi,
+        p.channel_pembayaran,
+        p.jumlah_pembayaran,
+        pm.id_pengaturan,
+        pm.nama_ewallet,
+        pm.nama_pemilik,
+        pm.nomor_akun
+    FROM reservasi r
+    JOIN lapangan l ON l.id_lapangan = r.id_lapangan
+    LEFT JOIN LATERAL (
+        SELECT kode_transaksi, channel_pembayaran, jumlah_pembayaran
+        FROM pembayaran
+        WHERE id_reservasi = r.id_reservasi
+        ORDER BY id_pembayaran DESC
+        LIMIT 1
+    ) p ON TRUE
+    LEFT JOIN LATERAL (
+        SELECT id_pengaturan, nama_ewallet, nama_pemilik, nomor_akun
+        FROM pengaturan_pembayaran
+        WHERE status_aktif = TRUE
+          AND LOWER(nama_ewallet) = LOWER(p.channel_pembayaran)
+        ORDER BY id_pengaturan
+        LIMIT 1
+    ) pm ON TRUE
+    WHERE r.id_user = %s
+      AND r.id_lapangan = %s
+      AND r.tanggal = %s
+      AND r.jam_mulai = %s
+      AND r.jam_selesai = %s
+      AND r.status_reservasi = 'ditahan'
+      AND r.hold_expires_at > NOW()
+    ORDER BY r.id_reservasi DESC
+    LIMIT 1;
+"""
+
+
+def _method_payload(method_id, ewallet, pemilik, nomor):
+    return {
+        "id": method_id,
+        "ewallet": ewallet,
+        "pemilik": pemilik,
+        "nomor": nomor,
+        "qr_url": (
+            url_for("payments.qr_image", method_id=method_id)
+            if method_id is not None else None
+        )
+    }
 
 
 @reservations_bp.route("/confirm", methods=["POST"])
@@ -273,20 +349,87 @@ def confirm_reservation():
             "message": "Jadwal yang dipilih sudah lewat."
         }), 400
 
-    field = _find_field(field_id)
-
-    if field is None:
-        return jsonify({
-            "success": False,
-            "message": "Lapangan tidak ditemukan."
-        }), 404
-
     user_id = session["user_id"]
+    max_holds = int(current_app.config.get("MAX_ACTIVE_HOLDS", 2))
 
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # Kunci level transaksi: aman untuk PgBouncer transaction mode.
+                cur.execute(
+                    "SELECT pg_advisory_xact_lock(%s);",
+                    (user_id,)
+                )
+
                 _expire_holds(cur)
+
+                cur.execute(SQL_IDEMPOTENT_HOLD, (
+                    user_id,
+                    field_id,
+                    tanggal,
+                    start_time,
+                    end_time
+                ))
+
+                existing = cur.fetchone()
+
+                if existing is not None:
+                    method_payload = _method_payload(
+                        existing["id_pengaturan"],
+                        existing["nama_ewallet"]
+                        or existing["channel_pembayaran"],
+                        existing["nama_pemilik"],
+                        existing["nomor_akun"]
+                    )
+
+                    return jsonify({
+                        "success": True,
+                        "idempotent": True,
+                        "message": (
+                            "Reservasi berhasil ditahan selama 10 menit."
+                        ),
+                        "reservation": {
+                            "id": existing["id_reservasi"],
+                            "field": existing["nama_lapangan"],
+                            "date": tanggal.isoformat(),
+                            "start_time": start_time.strftime("%H:%M"),
+                            "end_time": end_time.strftime("%H:%M"),
+                            "hold_expires_at": (
+                                existing["hold_expires_at"].isoformat()
+                            )
+                        },
+                        "payment": {
+                            "transaction_code": existing["kode_transaksi"],
+                            "amount": float(
+                                existing["jumlah_pembayaran"]
+                                or existing["total_harga"]
+                            ),
+                            "channel": (
+                                existing["channel_pembayaran"]
+                                or existing["nama_ewallet"]
+                            ),
+                            "method": method_payload
+                        }
+                    }), 200
+
+                cur.execute("""
+                    SELECT COUNT(*) AS jumlah
+                    FROM reservasi
+                    WHERE id_user = %s
+                      AND status_reservasi = 'ditahan'
+                      AND hold_expires_at > NOW();
+                """, (user_id,))
+
+                active_holds = cur.fetchone()["jumlah"]
+
+                if active_holds >= max_holds:
+                    return jsonify({
+                        "success": False,
+                        "message": (
+                            "Selesaikan atau tunggu pembayaran reservasi "
+                            "sebelumnya. Maksimal {} jadwal ditahan."
+                        ).format(max_holds)
+                    }), 409
 
                 cur.execute(SQL_CONFIRM_METHOD, (channel_input,))
                 method = cur.fetchone()
@@ -299,6 +442,51 @@ def confirm_reservation():
                             "Pilih metode lain."
                         )
                     }), 400
+
+                cur.execute("""
+                    SELECT status, nama_lapangan
+                    FROM lapangan
+                    WHERE id_lapangan = %s
+                    FOR SHARE;
+                """, (field_id,))
+
+                field = cur.fetchone()
+
+                if field is None:
+                    return jsonify({
+                        "success": False,
+                        "message": "Lapangan tidak ditemukan."
+                    }), 404
+
+                if field["status"] != "aktif":
+                    return jsonify({
+                        "success": False,
+                        "message": "Lapangan sedang tidak tersedia."
+                    }), 409
+
+                cur.execute("""
+                    SELECT jam_buka, jam_tutup, status
+                    FROM jam_operasional
+                    WHERE id_lapangan = %s
+                      AND hari = %s;
+                """, (field_id, tanggal.isoweekday()))
+
+                operational = cur.fetchone()
+
+                if operational is None or not operational["status"]:
+                    return jsonify({
+                        "success": False,
+                        "message": "Lapangan tutup pada hari tersebut."
+                    }), 409
+
+                if (
+                    start_time < operational["jam_buka"]
+                    or end_time > operational["jam_tutup"]
+                ):
+                    return jsonify({
+                        "success": False,
+                        "message": "Jadwal di luar jam operasional."
+                    }), 409
 
                 tariff = _get_tariff(
                     cur,
@@ -404,7 +592,7 @@ def confirm_reservation():
         "message": "Reservasi berhasil ditahan selama 10 menit.",
         "reservation": {
             "id": reservation["id_reservasi"],
-            "field": field["name"],
+            "field": field["nama_lapangan"],
             "date": tanggal.isoformat(),
             "start_time": start_time.strftime("%H:%M"),
             "end_time": end_time.strftime("%H:%M"),
@@ -414,19 +602,14 @@ def confirm_reservation():
             "transaction_code": payment["kode_transaksi"],
             "amount": float(total),
             "channel": method["nama_ewallet"],
-            "method": {
-                "id": method["id_pengaturan"],
-                "ewallet": method["nama_ewallet"],
-                "pemilik": method["nama_pemilik"],
-                "nomor": method["nomor_akun"],
-                "qr_url": url_for(
-                    "payments.qr_image",
-                    method_id=method["id_pengaturan"]
-                )
-            }
+            "method": _method_payload(
+                method["id_pengaturan"],
+                method["nama_ewallet"],
+                method["nama_pemilik"],
+                method["nomor_akun"]
+            )
         }
     }), 201
-
 
 # ======================================================================
 # LANGKAH 1: BUKTI PEMBAYARAN, RIWAYAT, DAN DETAIL RESERVASI
