@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const bookingButton = document.getElementById("nextToStage2");
 
   const availabilityUrl = form.dataset.availabilityUrl;
+  const reservationsUrl = form.dataset.reservationsUrl;
   const fieldId = Number(form.dataset.fieldId);
   const pricePerHour = Number(form.dataset.price || 0);
 
@@ -300,6 +301,78 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function showPopup(message, options) {
+    options = options || {};
+
+    let popup = document.getElementById("bookingPopup");
+
+    if (!popup) {
+      popup = document.createElement("div");
+      popup.id = "bookingPopup";
+      popup.className = "app-popup";
+      popup.hidden = true;
+      popup.innerHTML = [
+        '<div class="app-popup-box" role="dialog" aria-modal="true"',
+        ' aria-labelledby="bookingPopupTitle">',
+        '<span class="app-popup-icon" aria-hidden="true">!</span>',
+        '<h3 id="bookingPopupTitle"></h3>',
+        '<p class="app-popup-message"></p>',
+        '<div class="app-popup-actions">',
+        '<a class="btn-primary app-popup-link" hidden></a>',
+        '<button type="button" class="btn-secondary app-popup-close">',
+        "Tutup</button>",
+        "</div>",
+        "</div>",
+      ].join("");
+
+      document.body.appendChild(popup);
+
+      const close = function () {
+        clearTimeout(popup.closeTimer);
+        popup.classList.remove("open");
+
+        popup.closeTimer = setTimeout(function () {
+          popup.hidden = true;
+        }, 200);
+      };
+
+      popup.querySelector(".app-popup-close").addEventListener("click", close);
+      popup.addEventListener("click", function (event) {
+        if (event.target === popup) close();
+      });
+      popup.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") close();
+      });
+
+      popup.close = close;
+    }
+
+    const title = popup.querySelector("#bookingPopupTitle");
+    const text = popup.querySelector(".app-popup-message");
+    const link = popup.querySelector(".app-popup-link");
+
+    title.textContent = options.title || "Perlu Diketahui";
+    text.textContent = message;
+
+    if (options.actionHref) {
+      link.href = options.actionHref;
+      link.textContent = options.actionText || "Lanjut";
+      link.hidden = false;
+    } else {
+      link.hidden = true;
+      link.removeAttribute("href");
+    }
+
+    clearTimeout(popup.closeTimer);
+    popup.hidden = false;
+
+    requestAnimationFrame(function () {
+      popup.classList.add("open");
+    });
+
+    popup.querySelector(".app-popup-close").focus();
+  }
+
   function showPaymentMessage(text, isError) {
     paymentMessage.textContent = text;
     paymentMessage.classList.toggle("error", isError);
@@ -548,7 +621,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   bookingButton.addEventListener("click", function () {
     if (loading || !bookingDate.value || !duration.value || !selectedSlot) {
-      alert("Silakan lengkapi tanggal, durasi, dan jadwal.");
+      showPopup("Silakan lengkapi tanggal, durasi, dan jadwal.", {
+        title: "Jadwal belum lengkap",
+      });
       return;
     }
 
@@ -586,7 +661,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function validateStage2() {
     if (!activityType.value) {
-      alert("Silakan pilih jenis kegiatan.");
+      showPopup("Silakan pilih jenis kegiatan.", {
+        title: "Jenis kegiatan belum dipilih",
+      });
       activityType.focus();
       return false;
     }
@@ -608,7 +685,9 @@ document.addEventListener("DOMContentLoaded", function () {
         teamAName.value.trim().toLowerCase() ===
         teamBName.value.trim().toLowerCase()
       ) {
-        alert("Nama Tim A dan Tim B tidak boleh sama.");
+        showPopup("Nama Tim A dan Tim B tidak boleh sama.", {
+          title: "Nama tim tidak valid",
+        });
         teamBName.focus();
         return false;
       }
@@ -796,7 +875,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (reservationCreated || loading) return;
 
     if (!selectedSlot) {
-      alert("Silakan pilih jadwal terlebih dahulu.");
+      showPopup("Silakan pilih jadwal terlebih dahulu.", {
+        title: "Jadwal belum dipilih",
+      });
       showStage(1);
       return;
     }
@@ -812,7 +893,9 @@ document.addEventListener("DOMContentLoaded", function () {
       : null;
 
     if (!channel) {
-      alert("Pilih metode pembayaran terlebih dahulu.");
+      showPopup("Pilih metode pembayaran terlebih dahulu.", {
+        title: "Metode pembayaran belum dipilih",
+      });
       return;
     }
 
@@ -875,7 +958,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
       showStage(4);
     } catch (error) {
-      alert(error.message || "Terjadi kesalahan saat membuat reservasi.");
+      const message =
+        error.message || "Terjadi kesalahan saat membuat reservasi.";
+
+      if (message.includes("Selesaikan atau tunggu pembayaran")) {
+        showPopup(message, {
+          title: "Pembayaran sebelumnya belum selesai",
+          actionHref: reservationsUrl,
+          actionText: "Lihat Reservasi Saya",
+        });
+      } else {
+        showPopup(message, { title: "Reservasi gagal" });
+      }
     } finally {
       loading = false;
 

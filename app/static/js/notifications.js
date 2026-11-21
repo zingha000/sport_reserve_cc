@@ -6,6 +6,7 @@
   let unread = 0;
   let toastedId = 0;
   let panelOpen = false;
+  let closeTimer = null;
   let bell, badge, panel, list;
 
   function create(tag, className, text) {
@@ -21,6 +22,7 @@
     bell = create("button", "notif-bell");
     bell.type = "button";
     bell.setAttribute("aria-label", "Notifikasi");
+    bell.setAttribute("aria-expanded", "false");
     bell.appendChild(create("span", "notif-bell-icon", "🔔"));
 
     badge = create("span", "notif-badge");
@@ -44,6 +46,10 @@
       ) {
         closePanel();
       }
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && panelOpen) closePanel();
     });
 
     document.body.appendChild(panel);
@@ -142,14 +148,26 @@
 
   function openPanel() {
     panelOpen = true;
+    clearTimeout(closeTimer);
     panel.hidden = false;
+    bell.setAttribute("aria-expanded", "true");
+
+    requestAnimationFrame(function () {
+      panel.classList.add("open");
+    });
 
     if (unread > 0) markRead();
   }
 
   function closePanel() {
     panelOpen = false;
-    panel.hidden = true;
+    panel.classList.remove("open");
+    bell.setAttribute("aria-expanded", "false");
+
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(function () {
+      if (!panelOpen) panel.hidden = true;
+    }, 230);
 
     // Tandai item sebagai terbaca di tampilan setelah panel ditutup.
     list.querySelectorAll(".unread").forEach(function (row) {
@@ -162,8 +180,39 @@
     else openPanel();
   }
 
+  function updateOffset() {
+    const footer = document.querySelector(".footer");
+
+    if (!footer) return;
+
+    const overlap = window.innerHeight - footer.getBoundingClientRect().top;
+    const offset =
+      overlap > 0
+        ? Math.max(
+            24,
+            Math.min(Math.round(overlap) + 24, window.innerHeight - 90),
+          )
+        : 24;
+
+    document.documentElement.style.setProperty(
+      "--notif-bottom",
+      offset + "px",
+    );
+  }
+
+  let offsetFrame = 0;
+
+  function scheduleOffset() {
+    cancelAnimationFrame(offsetFrame);
+
+    offsetFrame = requestAnimationFrame(updateOffset);
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     build();
+    updateOffset();
+    window.addEventListener("scroll", scheduleOffset, { passive: true });
+    window.addEventListener("resize", scheduleOffset);
     load();
     setInterval(load, POLL_MS);
   });

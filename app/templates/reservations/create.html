@@ -54,6 +54,7 @@ endblock %} {% block content %}
             data-price="{{ field.price }}"
             data-field-id="{{ field.id }}"
             data-availability-url="{{ url_for('reservations.check_availability', field_id=field.id) }}"
+            data-reservations-url="{{ url_for('reservations.list_reservations') }}"
           >
             <div class="form-group">
               <label for="bookingDate">Tanggal Bermain</label>
