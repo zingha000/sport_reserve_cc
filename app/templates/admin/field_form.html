@@ -147,6 +147,27 @@
     </div>
 
     <div class="payment-status-card admin-card-gap">
+            <h3>Foto Lapangan</h3>
+      <p class="admin-note">
+        Maksimal 5 foto (JPG, PNG, atau WebP, masing-masing sampai 5 MB).
+        Foto utama tampil di daftar lapangan.
+      </p>
+
+      <div
+        class="field-photos"
+        data-photos-root
+        data-list-url="{{ url_for('admin_field_photos.list_photos', field_id=field.id_lapangan) }}"
+        data-upload-url="{{ url_for('admin_field_photos.upload_photo', field_id=field.id_lapangan) }}"
+      >
+        <div class="field-photos-grid" data-photos-grid></div>
+
+        <div class="admin-actions">
+          <input id="photoInput" type="file" accept="image/png,image/jpeg,image/webp" />
+          <button type="button" class="btn-primary" data-photo-upload>Unggah Foto</button>
+        </div>
+
+        <div class="auth-message" data-photos-message hidden></div>
+      </div>
       <h3>Tarif</h3>
 
       {% if tariffs %}
@@ -252,4 +273,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/admin-fields.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin-field-photos.js') }}"></script>
 {% endblock %}

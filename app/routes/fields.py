@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, abort
 from app.database import get_db_connection
+from app.routes.field_photos import load_photos
 
 fields_bp = Blueprint("fields", __name__, url_prefix="/fields")
 
@@ -45,23 +46,27 @@ def get_fields():
             cursor.execute(SQL_ACTIVE_FIELDS)
             rows = cursor.fetchall()
 
-    fields = []
+            fields = [
+                {
+                    "id": row["id_lapangan"],
+                    "name": row["nama_lapangan"],
+                    "location": "Bandung",
+                    "type": row["luas_lapangan"] or "Lapangan Futsal",
+                    "price": int(row["harga_terendah"]),
+                    "status": "Tersedia",
+                    "image": None,
+                    "photos": [],
+                    "description": (
+                        row["deskripsi"]
+                        or "Informasi lapangan belum tersedia."
+                    ),
+                    "area": row["luas_lapangan"],
+                }
+                for row in rows
+            ]
 
-    for row in rows:
-        fields.append({
-            "id": row["id_lapangan"],
-            "name": row["nama_lapangan"],
-            "location": "Bandung",
-            "type": row["luas_lapangan"] or "Lapangan Futsal",
-            "price": int(row["harga_terendah"]),
-            "status": "Tersedia",
-            "image": None,
-            "description": (
-                row["deskripsi"]
-                or "Informasi lapangan belum tersedia."
-            ),
-            "area": row["luas_lapangan"]
-        })
+            # Satu query tambahan untuk semua foto (tanpa N+1).
+            load_photos(cursor, fields)
 
     return fields
 

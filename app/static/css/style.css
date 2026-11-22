@@ -792,6 +792,7 @@ a {
 }
 
 .detail-image {
+  position: relative;
   height: 420px;
   overflow: hidden;
   border-radius: 16px;
@@ -3114,4 +3115,123 @@ a.admin-stat:hover {
 
 .app-popup-actions .btn-primary[hidden] {
   display: none;
+}
+/* ---------- Foto lapangan ---------- */
+.detail-media {
+  min-width: 0;
+}
+
+.gallery-thumbs {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.gallery-thumb {
+  width: 78px;
+  height: 58px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #245747;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-thumb.active,
+.gallery-thumb:hover {
+  opacity: 1;
+  border-color: #c8f169;
+}
+
+.gallery-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.gallery-nav:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.gallery-nav-prev {
+  left: 12px;
+}
+
+.gallery-nav-next {
+  right: 12px;
+}
+
+.gallery-counter {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.field-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.field-photo-card {
+  position: relative;
+  border: 1px solid #dfe7dc;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.field-photo-card img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+}
+
+.field-photo-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #c8f169;
+  color: #173f35;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.field-photo-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  flex-wrap: wrap;
 }

@@ -14,14 +14,31 @@
 
     <div class="detail-layout">
 
-      <div class="detail-image">
-        {% if field.image %}
-          <img src="{{ field.image }}" alt="{{ field.name }}" />
-        {% else %}
-          <div class="detail-image-placeholder">
-            <span>⚽</span>
-            <small>SPORTRESERVE</small>
-          </div>
+            <div class="detail-media" data-gallery>
+        <div class="detail-image">
+          {% if field.image %}
+            <img src="{{ field.image }}" alt="{{ field.name }}" data-gallery-main />
+          {% else %}
+            <div class="detail-image-placeholder">
+              <span>⚽</span>
+              <small>SPORTRESERVE</small>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if field.photos|length > 1 %}
+        <div class="gallery-thumbs">
+          {% for photo in field.photos %}
+          <button
+            type="button"
+            class="gallery-thumb{% if loop.first %} active{% endif %}"
+            data-gallery-src="{{ photo }}"
+            aria-label="Tampilkan foto {{ loop.index }}"
+          >
+            <img src="{{ photo }}" alt="" loading="lazy" />
+          </button>
+          {% endfor %}
+        </div>
         {% endif %}
       </div>
 
@@ -132,7 +149,7 @@
 
 
 {% block scripts %}
-
+<script src="{{ url_for('static', filename='js/field-gallery.js') }}"></script>
 {% if not session.get("user_id") %}
 
 <script>

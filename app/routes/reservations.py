@@ -801,15 +801,107 @@ def upload_payment_proof(reservation_id):
     user_id = session["user_id"]
     saved_key = None
 
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            _expire_holds(cur)
+
+            cur.execute("""
+                SELECT status_reservasi
+                FROM reservasi
+                WHERE id_reservasi = %s
+                  AND id_user = %s;
+            """, (reservation_id, user_id))
+
+            reservation = cur.fetchone()
+
+            if reservation is None:
+                return jsonify({
+                    "success": False,
+                    "message": "Reservasi tidak ditemukan."
+                }), 404
+
+            status = reservation["status_reservasi"]
+
+            if status == "kedaluwarsa":
+                return jsonify({
+                    "success": False,
+                    "message": (
+                        "Waktu pembayaran telah habis. "
+                        "Jadwal tidak lagi ditahan."
+                    )
+                }), 409
+
+            if status != "ditahan":
+                return jsonify({
+                    "success": False,
+                    "message": (
+                        "Bukti pembayaran sudah dikirim atau "
+                        "reservasi tidak dapat dibayar lagi."
+                    )
+                }), 409
+
+            cur.execute("""
+                SELECT id_pembayaran, channel_pembayaran, bukti_object_key
+                FROM pembayaran
+                WHERE id_reservasi = %s
+                  AND status_pembayaran = 'menunggu'
+                ORDER BY id_pembayaran DESC
+                LIMIT 1;
+            """, (reservation_id,))
+
+            payment = cur.fetchone()
+
+            if payment is None:
+                return jsonify({
+                    "success": False,
+                    "message": "Data pembayaran tidak ditemukan."
+                }), 409
+
+            if payment["bukti_object_key"]:
+                return jsonify({
+                    "success": False,
+                    "message": (
+                        "Bukti pembayaran sudah dikirim atau "
+                        "reservasi tidak dapat dibayar lagi."
+                    )
+                }), 409
+
+            if payment["channel_pembayaran"]:
+                channel = payment["channel_pembayaran"]
+
+            elif channel is not None:
+                cur.execute(SQL_ACTIVE_CHANNEL, (channel,))
+                method = cur.fetchone()
+
+                if method is None:
+                    return jsonify({
+                        "success": False,
+                        "message": "Metode pembayaran tidak valid."
+                    }), 400
+
+                channel = method["nama_ewallet"]
+
+    try:
+        saved_key = storage.save_payment_proof(data, mime_type)
+    except storage.StorageError as error:
+        return jsonify({
+            "success": False,
+            "message": str(error)
+        }), 503
+
+    failure = None
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 _expire_holds(cur)
 
-                # Kunci baris reservasi agar upload ganda / kedaluwarsa
-                # tidak saling menimpa.
                 cur.execute("""
-                    SELECT status_reservasi
+                    SELECT status_reservasi,
+                           (
+                               hold_expires_at IS NOT NULL
+                               AND hold_expires_at > NOW()
+                           ) AS hold_active
                     FROM reservasi
                     WHERE id_reservasi = %s
                       AND id_user = %s
@@ -819,110 +911,93 @@ def upload_payment_proof(reservation_id):
                 reservation = cur.fetchone()
 
                 if reservation is None:
-                    return jsonify({
-                        "success": False,
-                        "message": "Reservasi tidak ditemukan."
-                    }), 404
+                    failure = (
+                        "Bukti pembayaran sudah dikirim atau "
+                        "reservasi tidak dapat dibayar lagi."
+                    )
+                elif reservation["status_reservasi"] == "kedaluwarsa":
+                    failure = (
+                        "Waktu pembayaran telah habis. "
+                        "Jadwal tidak lagi ditahan."
+                    )
+                elif reservation["status_reservasi"] != "ditahan":
+                    failure = (
+                        "Bukti pembayaran sudah dikirim atau "
+                        "reservasi tidak dapat dibayar lagi."
+                    )
+                elif not reservation["hold_active"]:
+                    failure = (
+                        "Waktu pembayaran telah habis. "
+                        "Jadwal tidak lagi ditahan."
+                    )
+                else:
+                    cur.execute("""
+                        SELECT id_pembayaran,
+                               status_pembayaran,
+                               channel_pembayaran,
+                               bukti_object_key
+                        FROM pembayaran
+                        WHERE id_reservasi = %s
+                        ORDER BY id_pembayaran DESC
+                        LIMIT 1
+                        FOR UPDATE;
+                    """, (reservation_id,))
 
-                status = reservation["status_reservasi"]
+                    payment = cur.fetchone()
 
-                if status == "kedaluwarsa":
-                    return jsonify({
-                        "success": False,
-                        "message": (
-                            "Waktu pembayaran telah habis. "
-                            "Jadwal tidak lagi ditahan."
-                        )
-                    }), 409
-
-                if status != "ditahan":
-                    return jsonify({
-                        "success": False,
-                        "message": (
+                    if payment is None:
+                        failure = "Data pembayaran tidak ditemukan."
+                    elif (
+                        payment["status_pembayaran"] != "menunggu"
+                        or payment["bukti_object_key"]
+                    ):
+                        failure = (
                             "Bukti pembayaran sudah dikirim atau "
                             "reservasi tidak dapat dibayar lagi."
                         )
-                    }), 409
+                    else:
+                        if payment["channel_pembayaran"]:
+                            channel = payment["channel_pembayaran"]
 
-                cur.execute("""
-                    SELECT id_pembayaran, channel_pembayaran
-                    FROM pembayaran
-                    WHERE id_reservasi = %s
-                      AND status_pembayaran = 'menunggu'
-                    ORDER BY id_pembayaran DESC
-                    LIMIT 1
-                    FOR UPDATE;
-                """, (reservation_id,))
+                        cur.execute("""
+                            UPDATE pembayaran
+                            SET bukti_object_key = %s,
+                                channel_pembayaran = %s
+                            WHERE id_pembayaran = %s;
+                        """, (saved_key, channel, payment["id_pembayaran"]))
 
-                payment = cur.fetchone()
+                        cur.execute("""
+                            UPDATE reservasi
+                            SET status_reservasi = 'menunggu',
+                                hold_expires_at = NULL
+                            WHERE id_reservasi = %s;
+                        """, (reservation_id,))
 
-                if payment is None:
-                    return jsonify({
-                        "success": False,
-                        "message": "Data pembayaran tidak ditemukan."
-                    }), 409
-
-                if payment["channel_pembayaran"]:
-                    # Metode sudah dipilih saat konfirmasi; tidak diubah lagi.
-                    channel = payment["channel_pembayaran"]
-
-                elif channel is not None:
-                    cur.execute(SQL_ACTIVE_CHANNEL, (channel,))
-                    method = cur.fetchone()
-
-                    if method is None:
-                        return jsonify({
-                            "success": False,
-                            "message": "Metode pembayaran tidak valid."
-                        }), 400
-
-                    # Pakai penulisan resmi (mis. 'GoPay'), bukan input mentah.
-                    channel = method["nama_ewallet"]
-
-                try:
-                    saved_key = storage.save_payment_proof(data, mime_type)
-                except storage.StorageError as error:
-                    return jsonify({
-                        "success": False,
-                        "message": str(error)
-                    }), 503
-
-                cur.execute("""
-                    UPDATE pembayaran
-                    SET bukti_object_key = %s,
-                        channel_pembayaran = %s
-                    WHERE id_pembayaran = %s;
-                """, (saved_key, channel, payment["id_pembayaran"]))
-
-                # Constraint reservasi_check2: status selain 'ditahan'
-                # wajib hold_expires_at = NULL, jadi diubah bersamaan.
-                cur.execute("""
-                    UPDATE reservasi
-                    SET status_reservasi = 'menunggu',
-                        hold_expires_at = NULL
-                    WHERE id_reservasi = %s;
-                """, (reservation_id,))
-
-                cur.execute("""
-                    INSERT INTO reservasi_log (
-                        id_reservasi,
-                        id_user,
-                        status_sebelumnya,
-                        status_sesudahnya,
-                        keterangan
-                    )
-                    VALUES (%s, %s, 'ditahan', 'menunggu', %s);
-                """, (
-                    reservation_id,
-                    user_id,
-                    "Bukti pembayaran diunggah oleh pelanggan."
-                ))
+                        cur.execute("""
+                            INSERT INTO reservasi_log (
+                                id_reservasi,
+                                id_user,
+                                status_sebelumnya,
+                                status_sesudahnya,
+                                keterangan
+                            )
+                            VALUES (%s, %s, 'ditahan', 'menunggu', %s);
+                        """, (
+                            reservation_id,
+                            user_id,
+                            "Bukti pembayaran diunggah oleh pelanggan."
+                        ))
 
     except Exception:
-        # Jangan tinggalkan file yatim bila transaksi database gagal.
-        if saved_key:
-            storage.delete(saved_key)
+        storage.delete(saved_key)
         raise
+
+    if failure is not None:
+        storage.delete(saved_key)
+        return jsonify({
+            "success": False,
+            "message": failure
+        }), 409
 
     return jsonify({
         "success": True,

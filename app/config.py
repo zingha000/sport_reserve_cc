@@ -80,3 +80,13 @@ class Config:
     S3_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
     S3_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
     S3_BUCKET = os.getenv("S3_BUCKET")
+
+    try:
+        S3_READ_TIMEOUT = max(int(os.getenv("S3_READ_TIMEOUT", "10")), 1)
+    except ValueError:
+        S3_READ_TIMEOUT = 10
+
+    try:
+        S3_MAX_ATTEMPTS = max(int(os.getenv("S3_MAX_ATTEMPTS", "2")), 1)
+    except ValueError:
+        S3_MAX_ATTEMPTS = 2

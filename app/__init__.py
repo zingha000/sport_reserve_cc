@@ -16,6 +16,7 @@ def create_app():
     from app.routes.payments import payments_bp, admin_payments_bp
     from app.routes.notifications import notifications_bp
     from app.routes.health import health_bp
+    from app.routes.field_photos import field_photos_bp, admin_field_photos_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(fields_bp)
@@ -26,6 +27,8 @@ def create_app():
     app.register_blueprint(admin_payments_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(health_bp)
+    app.register_blueprint(field_photos_bp)
+    app.register_blueprint(admin_field_photos_bp)
 
     register_error_handlers(app)
 

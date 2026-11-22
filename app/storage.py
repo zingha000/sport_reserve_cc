@@ -92,9 +92,12 @@ def _client():
             signature_version="s3v4",
             # Neon Object Storage hanya mendukung path-style.
             s3={"addressing_style": "path"},
-            retries={"max_attempts": 3, "mode": "standard"},
+            retries={
+                "max_attempts": config.get("S3_MAX_ATTEMPTS", 2),
+                "mode": "standard",
+            },
             connect_timeout=5,
-            read_timeout=20,
+            read_timeout=config.get("S3_READ_TIMEOUT", 10),
         ),
     )
 
@@ -114,7 +117,7 @@ def _run(action, function, **kwargs):
         ) from error
 
 
-def _save_image(prefix, data, mime_type):
+def _save_image(prefix, data, mime_type, cache_control="private, no-store"):
     key = "{}/{}/{}{}".format(
         prefix,
         datetime.now().strftime("%Y/%m"),
@@ -129,7 +132,7 @@ def _save_image(prefix, data, mime_type):
         Key=key,
         Body=data,
         ContentType=mime_type,
-        CacheControl="private, no-store",
+        CacheControl=cache_control,
     )
 
     return key
@@ -143,6 +146,13 @@ def save_payment_proof(data, mime_type):
 def save_qris_image(data, mime_type):
     """Unggah gambar QRIS ke cloud dan kembalikan object key-nya."""
     return _save_image("qris", data, mime_type)
+
+
+def save_field_photo(data, mime_type):
+    """Unggah foto lapangan ke cloud dan kembalikan object key-nya."""
+    return _save_image(
+        "lapangan", data, mime_type, cache_control="public, max-age=86400"
+    )
 
 
 def presigned_url(key, seconds=PRESIGN_SECONDS):
