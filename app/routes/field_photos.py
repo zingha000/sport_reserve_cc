@@ -1,5 +1,6 @@
 """Foto lapangan: unggah ke Neon Object Storage, galeri, thumbnail, hapus."""
 
+from app.rate_limit import rate_limit, by_user
 from flask import (
     Blueprint,
     abort,
@@ -192,6 +193,10 @@ def list_photos(field_id):
 
 
 @admin_field_photos_bp.route("/<int:field_id>/photos", methods=["POST"])
+@rate_limit(
+    "unggah-foto", limit=10, window=60, key=by_user,
+    message="Terlalu banyak unggahan foto. Tunggu 1 menit lalu coba lagi.",
+)
 @admin_required
 def upload_photo(field_id):
     uploaded = request.files.get("photo")

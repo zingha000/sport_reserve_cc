@@ -1,3 +1,4 @@
+from app.rate_limit import rate_limit, by_user
 from datetime import date, time, datetime, timedelta
 from decimal import Decimal
 import secrets
@@ -293,7 +294,12 @@ def _method_payload(method_id, ewallet, pemilik, nomor):
     }
 
 
+
 @reservations_bp.route("/confirm", methods=["POST"])
+@rate_limit(
+    "reservasi-konfirmasi", limit=10, window=60, key=by_user,
+    message="Terlalu banyak permintaan reservasi. Tunggu sebentar lalu coba lagi.",
+)
 @login_required
 def confirm_reservation():
     data = request.get_json(silent=True) or {}
@@ -770,6 +776,10 @@ SQL_ACTIVE_CHANNEL = """
 
 
 @reservations_bp.route("/<int:reservation_id>/payment", methods=["POST"])
+@rate_limit(
+    "bukti-bayar", limit=10, window=60, key=by_user,
+    message="Terlalu banyak unggahan bukti pembayaran. Tunggu 1 menit lalu coba lagi.",
+)
 @login_required
 def upload_payment_proof(reservation_id):
     uploaded = request.files.get("proof")

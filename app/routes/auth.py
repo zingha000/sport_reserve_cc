@@ -1,4 +1,3 @@
-
 from flask import (
     Blueprint,
     request,
@@ -11,6 +10,7 @@ from flask import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import get_db_connection
 from app.utils import login_required
+from app.rate_limit import rate_limit, by_ip, by_ip_and_email
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -45,6 +45,10 @@ def register_page():
 # ==========================================
 
 @auth_bp.route("/register", methods=["POST"])
+@rate_limit(
+    "register", limit=10, window=3600, key=by_ip,
+    message="Terlalu banyak pendaftaran dari perangkat ini. Coba lagi nanti.",
+)
 def register():
     data = request.get_json(silent=True) or {}
 
@@ -102,6 +106,14 @@ def register():
 # ==========================================
 
 @auth_bp.route("/login", methods=["POST"])
+@rate_limit(
+    "login-ip", limit=20, window=60, key=by_ip,
+    message="Terlalu banyak percobaan login dari perangkat ini. Tunggu 1 menit lalu coba lagi.",
+)
+@rate_limit(
+    "login-akun", limit=5, window=60, key=by_ip_and_email,
+    message="Terlalu banyak percobaan login untuk akun ini. Tunggu 1 menit lalu coba lagi.",
+)
 def login():
     data = request.get_json(silent=True) or {}
 

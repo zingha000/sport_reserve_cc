@@ -1,3 +1,4 @@
+from app.rate_limit import rate_limit, by_user
 from flask import (
     Blueprint,
     Response,
@@ -176,6 +177,10 @@ def list_admin():
 
 
 @admin_payments_bp.route("", methods=["POST"])
+@rate_limit(
+    "unggah-qris", limit=10, window=60, key=by_user,
+    message="Terlalu banyak unggahan QRIS. Tunggu 1 menit lalu coba lagi.",
+)
 @admin_required
 def create_method():
     ewallet = (request.form.get("ewallet") or "").strip()
