@@ -23,3 +23,15 @@ document.addEventListener("DOMContentLoaded", function () {
         cards.forEach(card => fieldGrid.appendChild(card));
     });
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    const navbar = document.querySelector(".navbar");
+    if (!navbar) return;
+
+    function updateNavbar() {
+        navbar.classList.toggle("scrolled", window.scrollY > 10);
+    }
+
+    updateNavbar();
+    window.addEventListener("scroll", updateNavbar, { passive: true });
+});

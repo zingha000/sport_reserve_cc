@@ -19,13 +19,20 @@
                 SportReserve
             </a>
 
+                        {% set ep = request.endpoint or '' %}
             <nav class="nav-menu">
-                <a href="{{ url_for('home') }}">Beranda</a>
-                <a href="{{ url_for('fields.list_fields') }}">Lapangan</a>
+                <a href="{{ url_for('home') }}"
+                   class="nav-link{% if ep == 'home' %} active{% endif %}"
+                   {% if ep == 'home' %}aria-current="page"{% endif %}>Beranda</a>
+                <a href="{{ url_for('fields.list_fields') }}"
+                   class="nav-link{% if ep.startswith('fields.') %} active{% endif %}"
+                   {% if ep.startswith('fields.') %}aria-current="page"{% endif %}>Lapangan</a>
                 {% if session.get('user_id') %}
-                <a href="{{ url_for('reservations.list_reservations') }}">Reservasi Saya</a>
+                <a href="{{ url_for('reservations.list_reservations') }}"
+                   class="nav-link{% if ep.startswith('reservations.') %} active{% endif %}"
+                   {% if ep.startswith('reservations.') %}aria-current="page"{% endif %}>Reservasi</a>
                 {% endif %}
-                <a href="#">Tentang</a>
+                <a href="#" class="nav-link">Tentang</a>
             </nav>
 
             <div class="nav-actions">
