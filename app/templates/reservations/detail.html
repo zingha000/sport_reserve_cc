@@ -1,8 +1,5 @@
-{% extends "base.html" %}
-
-{% block title %}Detail Reservasi - SportReserve{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Detail Reservasi - SportReserve{%
+endblock %} {% block content %}
 <section class="reservation-section">
   <div class="container">
     <a href="{{ url_for('reservations.list_reservations') }}" class="back-link">
@@ -12,7 +9,9 @@
     <div class="booking-header">
       <span class="section-label">DETAIL RESERVASI</span>
       <h1>{{ reservation.nama_lapangan }}</h1>
-      <p>Kode transaksi: <strong>{{ reservation.kode_transaksi or "-" }}</strong></p>
+      <p>
+        Kode transaksi: <strong>{{ reservation.kode_transaksi or "-" }}</strong>
+      </p>
     </div>
 
     <div class="reservation-detail-grid">
@@ -24,8 +23,8 @@
         <div class="summary-row">
           <span>Waktu</span>
           <strong>
-            {{ reservation.jam_mulai.strftime("%H:%M") }} -
-            {{ reservation.jam_selesai.strftime("%H:%M") }}
+            {{ reservation.jam_mulai.strftime("%H:%M") }} - {{
+            reservation.jam_selesai.strftime("%H:%M") }}
           </strong>
         </div>
         <div class="summary-row">
@@ -60,6 +59,17 @@
           <span>Total Pembayaran</span>
           <h2>{{ reservation.total_harga|rupiah }}</h2>
         </div>
+
+        {% if reservation.status_reservasi in ['ditahan', 'menunggu'] %}
+        <button
+          type="button"
+          class="rsv-btn rsv-btn-outline rsv-cancel-wide"
+          data-cancel="{{ url_for('reservations.cancel_reservation', reservation_id=reservation.id_reservasi) }}"
+          data-name="{{ reservation.nama_lapangan }} · {{ reservation.tanggal.strftime('%d %b %Y') }}, {{ reservation.jam_mulai.strftime('%H:%M') }}"
+        >
+          Batalkan Reservasi
+        </button>
+        {% endif %}
       </div>
 
       <div>
@@ -72,13 +82,19 @@
           <h3>Unggah Bukti Pembayaran</h3>
           <p>
             Sisa waktu penahanan jadwal:
-            <strong id="holdRemaining" data-seconds="{{ reservation.sisa_detik or 0 }}">-</strong>
+            <strong
+              id="holdRemaining"
+              data-seconds="{{ reservation.sisa_detik or 0 }}"
+              >-</strong
+            >
           </p>
 
           <div class="payment-due">
             <span>Bayar tepat</span>
             <strong>{{ reservation.total_harga|rupiah }}</strong>
-            <small>Kode transaksi: {{ reservation.kode_transaksi or "-" }}</small>
+            <small
+              >Kode transaksi: {{ reservation.kode_transaksi or "-" }}</small
+            >
           </div>
 
           <div
@@ -106,9 +122,8 @@
             Kirim Bukti Pembayaran
           </button>
         </div>
-        {% endif %}
-
-        {% if reservation.status_reservasi in ("dikonfirmasi", "selesai") %}
+        {% endif %} {% if reservation.status_reservasi in ("dikonfirmasi",
+        "selesai") %}
         <h3 class="ticket-section-title">E-Tiket Reservasi</h3>
 
         <div class="ticket-card" id="ticket">
@@ -132,8 +147,8 @@
           <div class="summary-row">
             <span>Waktu</span>
             <strong>
-              {{ reservation.jam_mulai.strftime("%H:%M") }} -
-              {{ reservation.jam_selesai.strftime("%H:%M") }}
+              {{ reservation.jam_mulai.strftime("%H:%M") }} - {{
+              reservation.jam_selesai.strftime("%H:%M") }}
             </strong>
           </div>
           <div class="summary-row">
@@ -145,15 +160,19 @@
             <span>Metode</span>
             <strong>{{ reservation.channel_pembayaran }}</strong>
           </div>
-          {% endif %}
-          {% if reservation.diverifikasi_wib %}
+          {% endif %} {% if reservation.diverifikasi_wib %}
           <div class="summary-row">
             <span>Diverifikasi</span>
-            <strong>{{ reservation.diverifikasi_wib.strftime("%d-%m-%Y %H:%M") }} WIB</strong>
+            <strong
+              >{{ reservation.diverifikasi_wib.strftime("%d-%m-%Y %H:%M") }}
+              WIB</strong
+            >
           </div>
           {% endif %}
           <div class="ticket-status">✔ LUNAS &middot; DIKONFIRMASI</div>
-          <p class="ticket-note">Tunjukkan tiket ini kepada petugas saat datang.</p>
+          <p class="ticket-note">
+            Tunjukkan tiket ini kepada petugas saat datang.
+          </p>
         </div>
 
         <div class="payment-qr-actions no-print ticket-actions">
@@ -165,9 +184,7 @@
             Unduh PDF
           </button>
         </div>
-        {% endif %}
-
-        {% if reservation.has_proof %}
+        {% endif %} {% if reservation.has_proof %}
         <div class="payment-status-card no-print">
           <h3>Bukti Pembayaran</h3>
           <img
@@ -184,6 +201,74 @@
 {% endblock %}
 
 {% block scripts %}
+<dialog class="rsv-dialog" id="rsvDialog">
+  <h3>Batalkan reservasi ini?</h3>
+  <p id="rsvDialogName"></p>
+  <p class="rsv-dialog-note">Jadwal akan dilepas dan tidak bisa dikembalikan.</p>
+  <p class="rsv-dialog-error" id="rsvDialogError" hidden></p>
+  <div class="rsv-dialog-actions">
+    <button type="button" class="rsv-btn rsv-btn-outline" id="rsvDialogNo">Kembali</button>
+    <button type="button" class="rsv-btn rsv-btn-danger" id="rsvDialogYes">Ya, Batalkan</button>
+  </div>
+</dialog>
+
+<script>
+  (function () {
+    var dialog = document.getElementById("rsvDialog");
+    var trigger = document.querySelector("[data-cancel]");
+    if (!dialog || !trigger) return;
+
+    var nameEl = document.getElementById("rsvDialogName");
+    var errorEl = document.getElementById("rsvDialogError");
+    var yes = document.getElementById("rsvDialogYes");
+    var no = document.getElementById("rsvDialogNo");
+
+    function reset() {
+      errorEl.hidden = true;
+      yes.disabled = false;
+      yes.textContent = "Ya, Batalkan";
+    }
+
+    function fail(text) {
+      errorEl.textContent = text;
+      errorEl.hidden = false;
+      yes.disabled = false;
+      yes.textContent = "Ya, Batalkan";
+    }
+
+    trigger.addEventListener("click", function () {
+      nameEl.textContent = trigger.dataset.name;
+      reset();
+      dialog.showModal();
+    });
+
+    no.addEventListener("click", function () {
+      dialog.close();
+    });
+
+    yes.addEventListener("click", function () {
+      yes.disabled = true;
+      yes.textContent = "Memproses...";
+
+      fetch(trigger.dataset.cancel, { method: "POST" })
+        .then(function (res) {
+          return res.json().catch(function () { return {}; })
+            .then(function (data) { return { ok: res.ok, data: data }; });
+        })
+        .then(function (result) {
+          if (result.ok) {
+            window.location.reload();
+            return;
+          }
+          fail(result.data.message || "Gagal membatalkan reservasi.");
+        })
+        .catch(function () {
+          fail("Tidak bisa terhubung ke server. Coba lagi.");
+        });
+    });
+  })();
+</script>
+
 <script src="{{ url_for('static', filename='js/payment-methods.js') }}"></script>
 <script src="{{ url_for('static', filename='js/payment-upload.js') }}"></script>
 <script>

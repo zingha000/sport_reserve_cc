@@ -1,45 +1,95 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}Reservasi Saya - SportReserve{% endblock %}
+{% block title %}Reservasi - SportReserve{% endblock %}
+
+{% set grup = {
+  'ditahan': 'menunggu',
+  'menunggu': 'menunggu',
+  'dikonfirmasi': 'dikonfirmasi',
+  'selesai': 'dikonfirmasi',
+  'dibatalkan': 'dibatalkan',
+  'kedaluwarsa': 'dibatalkan'
+} %}
 
 {% block content %}
-<section class="reservation-section">
+<section class="rsv-section">
   <div class="container">
-    <div class="booking-header">
-      <span class="section-label">RESERVASI SAYA</span>
-      <h1>Riwayat Reservasi</h1>
-      <p>Daftar reservasi lapangan yang pernah Anda buat.</p>
+
+    <div class="rsv-head">
+      <div>
+        <h1>Reservasi Saya</h1>
+        <p>Pantau status dan kelola reservasi lapangan futsal Anda.</p>
+      </div>
+      <a href="{{ url_for('fields.list_fields') }}" class="btn-primary">+ Reservasi Baru</a>
     </div>
 
     {% if reservations %}
-    <div class="reservation-list">
-      {% for item in reservations %}
-      <a
-        class="reservation-card"
-        href="{{ url_for('reservations.reservation_detail', reservation_id=item.id_reservasi) }}"
-      >
-        <div>
-          <h3>{{ item.nama_lapangan }}</h3>
-          <p>
-            {{ item.tanggal.strftime("%d-%m-%Y") }} ·
-            {{ item.jam_mulai.strftime("%H:%M") }} -
-            {{ item.jam_selesai.strftime("%H:%M") }}
-          </p>
-          <small>Kode transaksi: {{ item.kode_transaksi or "-" }}</small>
-        </div>
 
-        <div class="reservation-card-side">
-          <span class="status-badge status-{{ item.status_reservasi }}">
-            {{ item.label_reservasi }}
-          </span>
-          <span class="status-badge status-{{ item.kelas_pembayaran }}">
-            {{ item.label_pembayaran }}
-          </span>
-          <strong>{{ item.total_harga|rupiah }}</strong>
-        </div>
-      </a>
-      {% endfor %}
+    <div class="rsv-chips" id="rsvChips">
+      <button type="button" class="rsv-chip active" data-group="semua" aria-pressed="true">
+        Semua ({{ reservations|length }})
+      </button>
+      <button type="button" class="rsv-chip" data-group="menunggu" aria-pressed="false">
+        Menunggu ({{ reservations|selectattr('status_reservasi', 'in', ['ditahan', 'menunggu'])|list|length }})
+      </button>
+      <button type="button" class="rsv-chip" data-group="dikonfirmasi" aria-pressed="false">
+        Dikonfirmasi ({{ reservations|selectattr('status_reservasi', 'in', ['dikonfirmasi', 'selesai'])|list|length }})
+      </button>
+      <button type="button" class="rsv-chip" data-group="dibatalkan" aria-pressed="false">
+        Dibatalkan ({{ reservations|selectattr('status_reservasi', 'in', ['dibatalkan', 'kedaluwarsa'])|list|length }})
+      </button>
     </div>
+
+    <div class="rsv-filter">
+      <select id="rsvField" aria-label="Filter lapangan">
+        <option value="">Semua Lapangan Futsal</option>
+        {% for nama in reservations|map(attribute='nama_lapangan')|unique|sort %}
+        <option value="{{ nama }}">{{ nama }}</option>
+        {% endfor %}
+      </select>
+      <button type="button" class="rsv-reset" id="rsvReset">Reset Filter</button>
+    </div>
+
+    <div class="rsv-table-wrap">
+      <table class="rsv-table">
+        <thead>
+          <tr>
+            <th>Lapangan</th>
+            <th>Tanggal</th>
+            <th>Jam</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in reservations %}
+          <tr data-group="{{ grup.get(item.status_reservasi, 'menunggu') }}"
+              data-field="{{ item.nama_lapangan }}">
+            <td><strong>{{ item.nama_lapangan }}</strong></td>
+            <td>{{ item.tanggal.strftime("%d %b %Y") }}</td>
+            <td>{{ item.jam_mulai.strftime("%H:%M") }} &ndash; {{ item.jam_selesai.strftime("%H:%M") }}</td>
+            <td>{{ item.total_harga|rupiah }}</td>
+            <td>
+              <span class="status-badge status-{{ item.status_reservasi }}">
+                {{ item.label_reservasi }}
+              </span>
+            </td>
+            <td>
+              <a class="rsv-btn"
+                 href="{{ url_for('reservations.reservation_detail', reservation_id=item.id_reservasi) }}">
+                Detail
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+          <tr id="rsvNone" hidden>
+            <td colspan="6" class="rsv-none">Tidak ada reservasi yang cocok dengan filter.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     {% else %}
     <div class="field-empty">
       <div class="field-empty-icon">?</div>
@@ -50,6 +100,62 @@
       </a>
     </div>
     {% endif %}
+
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var chips = document.querySelectorAll(".rsv-chip");
+    var select = document.getElementById("rsvField");
+    var reset = document.getElementById("rsvReset");
+    var rows = document.querySelectorAll(".rsv-table tbody tr[data-group]");
+    var none = document.getElementById("rsvNone");
+    if (!chips.length) return;
+
+    var group = "semua";
+
+    function apply() {
+      var field = select.value;
+      var shown = 0;
+
+      rows.forEach(function (row) {
+        var okGroup = group === "semua" || row.dataset.group === group;
+        var okField = !field || row.dataset.field === field;
+        var show = okGroup && okField;
+        row.hidden = !show;
+        if (show) shown++;
+      });
+
+      none.hidden = shown !== 0;
+    }
+
+    chips.forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        group = chip.dataset.group;
+        chips.forEach(function (c) {
+          var on = c === chip;
+          c.classList.toggle("active", on);
+          c.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        apply();
+      });
+    });
+
+    select.addEventListener("change", apply);
+
+    reset.addEventListener("click", function () {
+      group = "semua";
+      select.value = "";
+      chips.forEach(function (c) {
+        var on = c.dataset.group === "semua";
+        c.classList.toggle("active", on);
+        c.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      apply();
+    });
+  })();
+</script>
 {% endblock %}

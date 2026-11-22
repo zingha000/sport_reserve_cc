@@ -2,6 +2,7 @@ from app.rate_limit import rate_limit, by_user
 from datetime import date, time, datetime, timedelta
 from decimal import Decimal
 import secrets
+from psycopg.types.json import Json
 
 from flask import (
     Blueprint,
@@ -774,6 +775,120 @@ SQL_ACTIVE_CHANNEL = """
     LIMIT 1;
 """
 
+SQL_LOCK_OWN_RESERVATION = """
+    SELECT status_reservasi
+    FROM reservasi
+    WHERE id_reservasi = %s
+      AND id_user = %s
+    FOR UPDATE;
+"""
+
+SQL_CANCEL_RESERVATION = """
+    UPDATE reservasi
+    SET status_reservasi = 'dibatalkan',
+        hold_expires_at = NULL
+    WHERE id_reservasi = %s;
+"""
+
+SQL_LOCK_OPEN_PAYMENT = """
+    SELECT id_pembayaran
+    FROM pembayaran
+    WHERE id_reservasi = %s
+      AND status_pembayaran = 'menunggu'
+    ORDER BY id_pembayaran DESC
+    LIMIT 1
+    FOR UPDATE;
+"""
+
+CANCELLABLE_STATUSES = ("ditahan", "menunggu")
+
+
+@reservations_bp.route("/<int:reservation_id>/cancel", methods=["POST"])
+@rate_limit(
+    "batal-reservasi", limit=10, window=60, key=by_user,
+    message="Terlalu banyak permintaan pembatalan. Tunggu 1 menit lalu coba lagi.",
+)
+@login_required
+def cancel_reservation(reservation_id):
+    """Pelanggan membatalkan reservasinya sendiri.
+
+    Hanya status 'ditahan' dan 'menunggu' yang bisa dibatalkan.
+    Jadwal otomatis lepas karena constraint anti-bentrok hanya berlaku
+    untuk status ditahan, menunggu, dan dikonfirmasi.
+    """
+    user_id = session["user_id"]
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            _expire_holds(cur)
+
+            cur.execute(SQL_LOCK_OWN_RESERVATION, (reservation_id, user_id))
+            row = cur.fetchone()
+
+            if row is None:
+                return jsonify({
+                    "success": False,
+                    "message": "Reservasi tidak ditemukan."
+                }), 404
+
+            previous = row["status_reservasi"]
+
+            if previous not in CANCELLABLE_STATUSES:
+                return jsonify({
+                    "success": False,
+                    "message": "Reservasi dengan status ini tidak bisa dibatalkan."
+                }), 409
+
+                        # Tandai pembatalan oleh pelanggan supaya trigger notifikasi
+            # tidak mengirim pesan "Pembayaran ditolak".
+            cur.execute(
+                "SELECT set_config('app.dibatalkan_oleh', 'pelanggan', true);"
+            )
+
+            cur.execute(SQL_CANCEL_RESERVATION, (reservation_id,))
+
+            cur.execute("""
+                INSERT INTO reservasi_log (
+                    id_reservasi, id_user,
+                    status_sebelumnya, status_sesudahnya, keterangan
+                )
+                VALUES (%s, %s, %s, 'dibatalkan', %s);
+            """, (
+                reservation_id,
+                user_id,
+                previous,
+                "Dibatalkan oleh pelanggan."
+            ))
+
+            cur.execute(SQL_LOCK_OPEN_PAYMENT, (reservation_id,))
+            payment = cur.fetchone()
+
+            if payment is not None:
+                cur.execute("""
+                    UPDATE pembayaran
+                    SET status_pembayaran = 'gagal'
+                    WHERE id_pembayaran = %s;
+                """, (payment["id_pembayaran"],))
+
+                cur.execute("""
+                    INSERT INTO pembayaran_log (
+                        id_pembayaran, status_sebelumnya,
+                        status_sesudahnya, payload
+                    )
+                    VALUES (%s, 'menunggu', 'gagal', %s);
+                """, (
+                    payment["id_pembayaran"],
+                    Json({
+                        "user_id": user_id,
+                        "catatan": "Dibatalkan oleh pelanggan."
+                    })
+                ))
+
+    return jsonify({
+        "success": True,
+        "message": "Reservasi berhasil dibatalkan.",
+        "reservation": {"id": reservation_id, "status": "dibatalkan"}
+    }), 200
 
 @reservations_bp.route("/<int:reservation_id>/payment", methods=["POST"])
 @rate_limit(
