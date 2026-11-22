@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+  @view-transition { navigation: auto; }
+  .authx-side { view-transition-name: authx-side; }
+  .authx-main { view-transition-name: authx-main; }
+</style>
+{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<section class="authx-section">
+  <div class="authx-card">
+
+    <aside class="authx-side">
+      <a href="{{ url_for('home') }}" class="authx-brand">SPORTRESERVE</a>
+
+      <div>
+        <h2>{% block side_title %}{% endblock %}</h2>
+        <p>{% block side_text %}{% endblock %}</p>
+      </div>
+    </aside>
+
+    <div class="authx-main">
+      <div class="authx-inner">
+        <nav class="authx-tabs">
+          <a href="{{ url_for('auth.login_page') }}"
+             class="authx-tab{% if auth_tab == 'login' %} active{% endif %}">Masuk</a>
+          <a href="{{ url_for('auth.register_page') }}"
+             class="authx-tab{% if auth_tab == 'register' %} active{% endif %}">Daftar</a>
+        </nav>
+
+        <div class="authx-panel">
+          {% block auth_form %}{% endblock %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

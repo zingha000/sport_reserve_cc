@@ -1,93 +1,99 @@
+{% extends "auth/shell.html" %}
 
-{% extends "base.html" %}
+{% set auth_tab = "register" %}
 
-{% block title %}Daftar Akun | SportReserve{% endblock %}
+{% block title %}Daftar Akun - SportReserve{% endblock %}
 
-{% block content %}
-<section class="auth-section">
-    <div class="auth-card">
-        <div class="auth-header">
-            <span class="auth-icon">⚽</span>
-            <h1>Buat Akun SportReserve</h1>
-            <p>Daftar untuk mulai memesan lapangan futsal.</p>
-        </div>
+{% block side_title %}Mulai main futsal tanpa ribet.{% endblock %}
+{% block side_text %}Buat akun gratis, pilih jadwal kosong, dan amankan lapanganmu dalam beberapa menit.{% endblock %}
 
-        <form id="registerForm">
-            <div class="form-group">
-                <label for="nama">Nama Lengkap</label>
-                <input
-                    type="text"
-                    id="nama"
-                    name="nama"
-                    placeholder="Masukkan nama lengkap"
-                    required
-                >
-            </div>
+{% block auth_form %}
+<h1>Buat akun baru</h1>
+<p class="authx-sub">Gratis dan hanya butuh satu menit.</p>
 
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="nama@email.com"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="no_telepon">Nomor Telepon <span>(Opsional)</span></label>
-                <input
-                    type="tel"
-                    id="no_telepon"
-                    name="no_telepon"
-                    placeholder="08xxxxxxxxxx"
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <div class="password-wrapper">
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Minimal 8 karakter"
-                        minlength="8"
-                        required
-                    >
-                    <button type="button" class="toggle-password"
-                        data-target="password">Lihat</button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="confirmPassword">Konfirmasi Password</label>
-                <div class="password-wrapper">
-                    <input
-                        type="password"
-                        id="confirmPassword"
-                        placeholder="Ulangi password"
-                        required
-                    >
-                    <button type="button" class="toggle-password"
-                        data-target="confirmPassword">Lihat</button>
-                </div>
-            </div>
-
-            <div id="registerMessage" class="auth-message"></div>
-
-            <button type="submit" id="registerButton" class="auth-submit">
-                Daftar Sekarang
-            </button>
-        </form>
-
-        <p class="auth-switch">
-            Sudah punya akun?
-            <a href="{{ url_for('auth.login_page') }}">Masuk</a>
-        </p>
+<form id="registerForm" class="authx-form">
+    <div class="form-group">
+        <label for="nama">Nama Lengkap</label>
+        <input
+            type="text"
+            id="nama"
+            name="nama"
+            placeholder="Nama lengkap"
+            autocomplete="name"
+            required
+        >
     </div>
-</section>
+
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="nama@email.com"
+            autocomplete="email"
+            required
+        >
+    </div>
+
+    <div class="form-group">
+        <label for="no_telepon">Nomor Telepon <span>(opsional)</span></label>
+        <input
+            type="tel"
+            id="no_telepon"
+            name="no_telepon"
+            placeholder="08xxxxxxxxxx"
+            autocomplete="tel"
+        >
+    </div>
+
+    <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-wrapper">
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Minimal 8 karakter"
+                minlength="8"
+                autocomplete="new-password"
+                required
+            >
+            <button type="button" class="toggle-password"
+                data-target="password">Lihat</button>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="confirmPassword">Konfirmasi Password</label>
+        <div class="password-wrapper">
+            <input
+                type="password"
+                id="confirmPassword"
+                placeholder="Ulangi password"
+                autocomplete="new-password"
+                required
+            >
+            <button type="button" class="toggle-password"
+                data-target="confirmPassword">Lihat</button>
+        </div>
+    </div>
+
+    <div id="registerMessage" class="auth-message"></div>
+
+    <button type="submit" id="registerButton" class="authx-submit">
+        <span class="authx-submit-label">Buat Akun</span>
+    </button>
+</form>
+
+<p class="authx-switch">
+    Sudah punya akun?
+    <a href="{{ url_for('auth.login_page') }}">Masuk</a>
+</p>
+
+<a href="{{ url_for('fields.list_fields') }}" class="authx-back">
+    Kembali melihat lapangan
+</a>
 {% endblock %}
 
 {% block scripts %}
@@ -96,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("registerForm");
     const message = document.getElementById("registerMessage");
     const button = document.getElementById("registerButton");
+    const label = button.querySelector(".authx-submit-label");
 
     document.querySelectorAll(".toggle-password").forEach(toggle => {
         toggle.addEventListener("click", () => {
@@ -107,6 +114,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    function setButton(state, text) {
+        button.classList.remove("is-loading", "is-success");
+        if (state) button.classList.add(state);
+        label.textContent = text;
+    }
+
+    function showMessage(text, type) {
+        message.textContent = text;
+        message.className = "auth-message " + type;
+    }
+
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -115,31 +133,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const no_telepon = document.getElementById("no_telepon").value.trim();
         const password = document.getElementById("password").value;
         const confirmPassword = document.getElementById("confirmPassword").value;
+        let redirecting = false;
 
         message.textContent = "";
         message.className = "auth-message";
 
         if (password !== confirmPassword) {
-            message.textContent = "Konfirmasi password tidak cocok.";
-            message.classList.add("error");
+            showMessage("Konfirmasi password tidak cocok.", "error");
             return;
         }
 
         button.disabled = true;
-        button.textContent = "Memproses...";
+        setButton("is-loading", "Memproses...");
 
         try {
             const response = await fetch("{{ url_for('auth.register') }}", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    nama,
-                    email,
-                    no_telepon,
-                    password
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nama, email, no_telepon, password })
             });
 
             const result = await response.json();
@@ -148,19 +159,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(result.message || "Registrasi gagal.");
             }
 
-            message.textContent = "Registrasi berhasil. Mengalihkan ke halaman login...";
-            message.classList.add("success");
+            redirecting = true;
+            setButton("is-success", "Akun dibuat");
+            showMessage(
+                "Registrasi berhasil. Mengalihkan ke halaman masuk...",
+                "success"
+            );
 
             setTimeout(() => {
                 window.location.href = "{{ url_for('auth.login_page') }}";
             }, 1200);
-
         } catch (error) {
-            message.textContent = error.message;
-            message.classList.add("error");
+            showMessage(error.message, "error");
         } finally {
-            button.disabled = false;
-            button.textContent = "Daftar Sekarang";
+            if (!redirecting) {
+                button.disabled = false;
+                setButton("", "Buat Akun");
+            }
         }
     });
 });

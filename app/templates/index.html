@@ -1,65 +1,260 @@
-{% extends "base.html" %}
-
-{% block title %}SportReserve - Reservasi Lapangan Futsal{% endblock %}
-
-{% block content %}
-<section class="listing-hero">
+{% extends "base.html" %} {% block title %}Reservasi - SportReserve{% endblock
+%} {% set grup = { 'ditahan': 'menunggu', 'menunggu': 'menunggu',
+'dikonfirmasi': 'dikonfirmasi', 'selesai': 'dikonfirmasi', 'dibatalkan':
+'dibatalkan', 'kedaluwarsa': 'dibatalkan' } %} {% block content %}
+<section class="rsv-section">
   <div class="container">
-    <span class="section-label">RESERVASI LAPANGAN FUTSAL</span>
-    <h1>Booking Lapangan Futsal, Tanpa Ribet.</h1>
-    <p>
-      Pilih lapangan, cek jadwal yang tersedia, bayar lewat QRIS, lalu
-      tunggu konfirmasi. Semua dari satu tempat.
-    </p>
+    <div class="rsv-head">
+      <div>
+        <h1>Reservasi Saya</h1>
+        <p>Pantau status dan kelola reservasi lapangan futsal Anda.</p>
+      </div>
+      <a href="{{ url_for('fields.list_fields') }}" class="btn-primary"
+        >+ Reservasi Baru</a
+      >
+    </div>
 
-    <div class="admin-actions">
+    {% if reservations %}
+
+    <div class="rsv-chips" id="rsvChips">
+      <button
+        type="button"
+        class="rsv-chip active"
+        data-group="semua"
+        aria-pressed="true"
+      >
+        Semua ({{ reservations|length }})
+      </button>
+      <button
+        type="button"
+        class="rsv-chip"
+        data-group="menunggu"
+        aria-pressed="false"
+      >
+        Menunggu ({{ reservations|selectattr('status_reservasi', 'in',
+        ['ditahan', 'menunggu'])|list|length }})
+      </button>
+      <button
+        type="button"
+        class="rsv-chip"
+        data-group="dikonfirmasi"
+        aria-pressed="false"
+      >
+        Dikonfirmasi ({{ reservations|selectattr('status_reservasi', 'in',
+        ['dikonfirmasi', 'selesai'])|list|length }})
+      </button>
+      <button
+        type="button"
+        class="rsv-chip"
+        data-group="dibatalkan"
+        aria-pressed="false"
+      >
+        Dibatalkan ({{ reservations|selectattr('status_reservasi', 'in',
+        ['dibatalkan', 'kedaluwarsa'])|list|length }})
+      </button>
+    </div>
+
+    <div class="rsv-filter">
+      <select id="rsvField" aria-label="Filter lapangan">
+        <option value="">Semua Lapangan Futsal</option>
+        {% for nama in reservations|map(attribute='nama_lapangan')|unique|sort
+        %}
+        <option value="{{ nama }}">{{ nama }}</option>
+        {% endfor %}
+      </select>
+      <button type="button" class="rsv-reset" id="rsvReset">
+        Reset Filter
+      </button>
+    </div>
+
+    <div class="rsv-table-wrap">
+      <table class="rsv-table">
+        <thead>
+          <tr>
+            <th>Lapangan</th>
+            <th>Tanggal</th>
+            <th>Jam</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in reservations %}
+          <tr
+            data-group="{{ grup.get(item.status_reservasi, 'menunggu') }}"
+            data-field="{{ item.nama_lapangan }}"
+          >
+            <td><strong>{{ item.nama_lapangan }}</strong></td>
+            <td>{{ item.tanggal.strftime("%d %b %Y") }}</td>
+            <td>
+              {{ item.jam_mulai.strftime("%H:%M") }} – {{
+              item.jam_selesai.strftime("%H:%M") }}
+            </td>
+            <td>{{ item.total_harga|rupiah }}</td>
+            <td>
+              <span class="status-badge status-{{ item.status_reservasi }}">
+                {{ item.label_reservasi }}
+              </span>
+            </td>
+            <td class="rsv-actions">
+              {% if item.status_reservasi in ['ditahan', 'menunggu'] %}
+              <button
+                type="button"
+                class="rsv-btn rsv-btn-outline"
+                data-cancel="{{ url_for('reservations.cancel_reservation', reservation_id=item.id_reservasi) }}"
+                data-name="{{ item.nama_lapangan }} · {{ item.tanggal.strftime('%d %b %Y') }}, {{ item.jam_mulai.strftime('%H:%M') }}"
+              >
+                Batalkan
+              </button>
+              {% endif %}
+              <a
+                class="rsv-btn"
+                href="{{ url_for('reservations.reservation_detail', reservation_id=item.id_reservasi) }}"
+              >
+                Detail
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+          <tr id="rsvNone" hidden>
+            <td colspan="6" class="rsv-none">
+              Tidak ada reservasi yang cocok dengan filter.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="field-empty">
+      <div class="field-empty-icon">?</div>
+      <h3>Belum ada reservasi</h3>
+      <p>Anda belum pernah melakukan reservasi lapangan.</p>
       <a href="{{ url_for('fields.list_fields') }}" class="btn-primary">
         Lihat Lapangan
       </a>
-      {% if session.get("user_id") %}
-      <a href="{{ url_for('reservations.list_reservations') }}" class="btn-secondary">
-        Reservasi Saya
-      </a>
-      {% else %}
-      <a href="{{ url_for('auth.register_page') }}" class="btn-secondary">
-        Daftar Gratis
-      </a>
-      {% endif %}
     </div>
+    {% endif %}
   </div>
 </section>
-
-<section class="listing-section">
-  <div class="container">
-    <div class="listing-toolbar">
-      <div>
-        <h2>Cara Memesan</h2>
-        <p>Empat langkah dari memilih jadwal sampai dikonfirmasi.</p>
-      </div>
-    </div>
-
-    <div class="admin-stats">
-      <div class="admin-stat">
-        <span>Langkah 1</span>
-        <strong>Pilih</strong>
-        <small>Pilih lapangan dan lihat jadwal yang masih kosong.</small>
-      </div>
-      <div class="admin-stat">
-        <span>Langkah 2</span>
-        <strong>Tahan</strong>
-        <small>Jadwal ditahan 10 menit selama Anda membayar.</small>
-      </div>
-      <div class="admin-stat">
-        <span>Langkah 3</span>
-        <strong>Bayar</strong>
-        <small>Bayar lewat QRIS dan unggah bukti pembayaran.</small>
-      </div>
-      <div class="admin-stat">
-        <span>Langkah 4</span>
-        <strong>Konfirmasi</strong>
-        <small>Admin memeriksa bukti dan mengonfirmasi reservasi.</small>
-      </div>
-    </div>
+{% block scripts %}
+<dialog class="rsv-dialog" id="rsvDialog">
+  <h3>Batalkan reservasi ini?</h3>
+  <p id="rsvDialogName"></p>
+  <p class="rsv-dialog-note">Jadwal akan dilepas dan tidak bisa dikembalikan.</p>
+  <p class="rsv-dialog-error" id="rsvDialogError" hidden></p>
+  <div class="rsv-dialog-actions">
+    <button type="button" class="rsv-btn rsv-btn-outline" id="rsvDialogNo">Kembali</button>
+    <button type="button" class="rsv-btn rsv-btn-danger" id="rsvDialogYes">Ya, Batalkan</button>
   </div>
-</section>
+</dialog>
+
+<script>
+  (function () {
+    var dialog = document.getElementById("rsvDialog");
+    if (!dialog) return;
+
+    var nameEl = document.getElementById("rsvDialogName");
+    var errorEl = document.getElementById("rsvDialogError");
+    var yes = document.getElementById("rsvDialogYes");
+    var no = document.getElementById("rsvDialogNo");
+    var targetUrl = null;
+
+    document.querySelectorAll("[data-cancel]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        targetUrl = btn.dataset.cancel;
+        nameEl.textContent = btn.dataset.name;
+        errorEl.hidden = true;
+        yes.disabled = false;
+        yes.textContent = "Ya, Batalkan";
+        dialog.showModal();
+      });
+    });
+
+    no.addEventListener("click", function () {
+      dialog.close();
+    });
+
+    yes.addEventListener("click", function () {
+      if (!targetUrl) return;
+      yes.disabled = true;
+      yes.textContent = "Memproses...";
+
+      fetch(targetUrl, { method: "POST" })
+        .then(function (res) {
+          return res.json().catch(function () { return {}; })
+            .then(function (data) { return { ok: res.ok, data: data }; });
+        })
+        .then(function (result) {
+          if (result.ok) {
+            window.location.reload();
+            return;
+          }
+          errorEl.textContent = result.data.message || "Gagal membatalkan reservasi.";
+          errorEl.hidden = false;
+          yes.disabled = false;
+          yes.textContent = "Ya, Batalkan";
+        })
+        .catch(function () {
+          errorEl.textContent = "Tidak bisa terhubung ke server. Coba lagi.";
+          errorEl.hidden = false;
+          yes.disabled = false;
+          yes.textContent = "Ya, Batalkan";
+        });
+    });
+  })();
+</script>
+<script>
+  (function () {
+    var chips = document.querySelectorAll(".rsv-chip");
+    var select = document.getElementById("rsvField");
+    var reset = document.getElementById("rsvReset");
+    var rows = document.querySelectorAll(".rsv-table tbody tr[data-group]");
+    var none = document.getElementById("rsvNone");
+    if (!chips.length) return;
+
+    var group = "semua";
+
+    function apply() {
+      var field = select.value;
+      var shown = 0;
+
+      rows.forEach(function (row) {
+        var okGroup = group === "semua" || row.dataset.group === group;
+        var okField = !field || row.dataset.field === field;
+        var show = okGroup && okField;
+        row.hidden = !show;
+        if (show) shown++;
+      });
+
+      none.hidden = shown !== 0;
+    }
+
+    chips.forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        group = chip.dataset.group;
+        chips.forEach(function (c) {
+          var on = c === chip;
+          c.classList.toggle("active", on);
+          c.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        apply();
+      });
+    });
+
+    select.addEventListener("change", apply);
+
+    reset.addEventListener("click", function () {
+      group = "semua";
+      select.value = "";
+      chips.forEach(function (c) {
+        var on = c.dataset.group === "semua";
+        c.classList.toggle("active", on);
+        c.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      apply();
+    });
+  })();
+</script>
 {% endblock %}

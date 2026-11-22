@@ -33,8 +33,14 @@ def create_app():
     register_error_handlers(app)
 
     # Landing Page
+        # Landing Page
     @app.route("/")
     def home():
-        return render_template("index.html")
+        from app.home_data import get_home_data
+
+        fields, schedule = get_home_data()
+        return render_template(
+            "index.html", fields=fields, schedule=schedule
+        )
 
     return app

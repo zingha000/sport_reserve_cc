@@ -6,6 +6,8 @@
 
     <title>{% block title %}SportReserve{% endblock %}</title>
 
+    <script>document.documentElement.classList.add("js");</script>
+
     <link rel="stylesheet"
           href="{{ url_for('static', filename='css/style.css') }}">
 
@@ -13,13 +15,14 @@
 </head>
 <body>
 
+    {% block navbar %}
     <header class="navbar">
         <div class="container navbar-content">
             <a href="{{ url_for('home') }}" class="brand">
                 SportReserve
             </a>
 
-                        {% set ep = request.endpoint or '' %}
+            {% set ep = request.endpoint or '' %}
             <nav class="nav-menu">
                 <a href="{{ url_for('home') }}"
                    class="nav-link{% if ep == 'home' %} active{% endif %}"
@@ -49,16 +52,50 @@
             </div>
         </div>
     </header>
+    {% endblock %}
 
     <main>
         {% block content %}{% endblock %}
     </main>
 
+    {% block footer %}
     <footer class="footer">
-        <div class="container">
-            <p>&copy; 2026 SportReserve. All rights reserved.</p>
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <a href="{{ url_for('home') }}" class="footer-logo">SportReserve</a>
+                <p>
+                    Reservasi lapangan futsal di Bandung. Pilih jadwal,
+                    bayar lewat QRIS, dan main tanpa ribet.
+                </p>
+            </div>
+
+            <div class="footer-col">
+                <h4>Menu</h4>
+                <a href="{{ url_for('home') }}">Beranda</a>
+                <a href="{{ url_for('fields.list_fields') }}">Lapangan</a>
+                {% if session.get('user_id') %}
+                <a href="{{ url_for('reservations.list_reservations') }}">Reservasi</a>
+                {% else %}
+                <a href="{{ url_for('auth.login_page') }}">Masuk</a>
+                <a href="{{ url_for('auth.register_page') }}">Daftar</a>
+                {% endif %}
+            </div>
+
+            <div class="footer-col">
+                <h4>Layanan</h4>
+                <p>Lapangan futsal di Bandung</p>
+                <p>Pembayaran lewat QRIS</p>
+                <p>Konfirmasi oleh admin</p>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="container">
+                <p>&copy; 2026 SportReserve. Proyek Komputasi Awan, Universitas Widyatama.</p>
+            </div>
         </div>
     </footer>
+    {% endblock %}
 
     <script>
         // Logout: server menerima POST, lalu kembali ke beranda.
