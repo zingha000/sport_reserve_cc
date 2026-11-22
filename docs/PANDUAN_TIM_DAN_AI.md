@@ -220,3 +220,13 @@ SportReserve dikembangkan secara kolaboratif.
 Prioritas utama adalah menyelesaikan kebutuhan inti aplikasi, menjaga konsistensi database, memastikan integrasi cloud berjalan, dan membuat sistem yang dapat dipahami serta dilanjutkan oleh semua anggota kelompok.
 
 Tidak perlu menambah kompleksitas jika kebutuhan utama belum selesai.
+
+SportReserve: aturan coding
+
+Disepakati 22 Nov 2026. Berlaku setiap kali menambah atau mengubah fitur.
+
+Fitur baru tidak menyentuh alur inti (reservasi, pembayaran, login). Kalau memang harus mengubahnya, jalankan ulang pengujian bagian itu.
+Satu fitur satu branch git dan satu commit terpisah. Branch main selalu versi stabil; kalau fitur merusak sesuatu, kembali ke main.
+Jangan ubah struktur database (tabel atau kolom baru) tanpa keperluan jelas; kalau perlu, coba dulu di branch Neon, bukan langsung di production.
+Pengujian ulang cukup dua hal: python -m pytest -q -m "not concurrency" harus tetap lulus semua (terakhir 60 passed, 6 deselected), lalu uji manual fitur barunya sekali dari awal sampai akhir.
+Kerjakan satu langkah per pesan.
