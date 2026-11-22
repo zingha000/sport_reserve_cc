@@ -143,28 +143,66 @@ a {
 
 .footer {
   margin-top: auto;
-  padding: 28px 0;
   background: var(--primary);
-  color: white;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 40px;
+  padding: 44px 0 32px;
+}
+
+.footer-logo {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.footer-brand p {
+  max-width: 340px;
+  margin-top: 12px;
+  color: #cfe0d6;
+  line-height: 1.7;
+}
+
+.footer-col h4 {
+  margin-bottom: 14px;
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.footer-col a,
+.footer-col p {
+  display: block;
+  margin-bottom: 10px;
+  color: #cfe0d6;
+}
+
+.footer-col a:hover {
+  color: #ffffff;
+}
+
+.footer-bottom {
+  padding: 16px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.footer-bottom p {
+  color: #a9c2b4;
+  font-size: 12px;
   text-align: center;
-  font-size: 13px;
 }
 
 @media (max-width: 768px) {
-  .navbar-content {
-    flex-wrap: wrap;
-    padding: 16px 0;
-  }
-
-  .nav-menu {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-    gap: 16px;
-  }
-
-  .nav-actions {
-    gap: 8px;
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 32px 0 24px;
   }
 }
 
@@ -3280,4 +3318,880 @@ a.admin-stat:hover {
   gap: 6px;
   padding: 8px;
   flex-wrap: wrap;
+}
+
+/* ===== Beranda: tentang, jadwal terdekat, ajakan ===== */
+.home-section {
+  padding: 72px 0;
+}
+
+.home-section-alt {
+  background: #edf3e7;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.about-text h2 {
+  margin: 6px 0 14px;
+  color: var(--primary);
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+.about-text p {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.check-list {
+  list-style: none;
+  margin-top: 22px;
+  display: grid;
+  gap: 12px;
+}
+
+.check-list li {
+  position: relative;
+  padding-left: 34px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.check-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.schedule-card {
+  padding: 26px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(23, 63, 53, 0.07);
+}
+
+.schedule-head {
+  margin-bottom: 18px;
+}
+
+.schedule-head h3 {
+  color: var(--primary);
+  font-size: 18px;
+}
+
+.schedule-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.schedule-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 14px 16px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.schedule-row strong {
+  display: block;
+  color: var(--primary);
+  font-size: 15px;
+}
+
+.schedule-row small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pill-dikonfirmasi {
+  background: #e3e8e5;
+  color: #4c5a53;
+}
+
+.pill-menunggu {
+  background: #fff3d6;
+  color: #8a5a00;
+}
+
+.pill-ditahan {
+  background: #e8f0fb;
+  color: #1f4e8c;
+}
+
+.schedule-empty {
+  padding: 18px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.schedule-foot {
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.home-link {
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.home-link:hover {
+  text-decoration: underline;
+}
+
+.cta-band {
+  padding: 72px 0;
+  background: var(--primary);
+  color: #ffffff;
+  text-align: center;
+}
+
+.cta-band .section-label {
+  color: var(--accent);
+}
+
+.cta-band h2 {
+  font-size: clamp(26px, 3.4vw, 38px);
+  letter-spacing: -0.5px;
+}
+
+.cta-band p {
+  max-width: 520px;
+  margin: 12px auto 26px;
+  color: #cfe0d6;
+  font-size: 15px;
+}
+
+.btn-accent {
+  display: inline-block;
+  padding: 14px 26px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.btn-accent:hover {
+  background: #d6f78a;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 900px) {
+  .home-section {
+    padding: 52px 0;
+  }
+
+  .about-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* ===== Cara memesan dan jarak beranda ===== */
+.home-section {
+  padding: 44px 0;
+}
+
+.home-section-tight {
+  padding: 36px 0;
+}
+
+.home-section .listing-toolbar {
+  margin-bottom: 20px;
+}
+
+.home-section .field-grid {
+  gap: 16px;
+}
+
+.about-grid {
+  gap: 40px;
+}
+
+.cta-band {
+  padding: 52px 0;
+}
+
+.order-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.order-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.order-step-no {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.order-step strong {
+  display: block;
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.order-step small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .order-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .order-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Animasi buka halaman ===== */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+main {
+  animation: fade-in 0.35s ease both;
+}
+
+.listing-hero .container > * {
+  animation: rise-in 0.55s ease both;
+}
+
+.listing-hero .container > :nth-child(2) { animation-delay: 0.08s; }
+.listing-hero .container > :nth-child(3) { animation-delay: 0.16s; }
+.listing-hero .container > :nth-child(4) { animation-delay: 0.24s; }
+
+.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.js .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main,
+  .listing-hero .container > * {
+    animation: none;
+  }
+
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ===== Halaman masuk dan daftar (dua panel, layar penuh) ===== */
+.authx-section {
+  background: #ffffff;
+}
+
+.authx-card {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 5fr 6fr;
+}
+
+.authx-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 32px;
+  padding: 64px;
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.authx-brand {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+.authx-side h2 {
+  font-size: clamp(32px, 3.6vw, 48px);
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+
+.authx-side p {
+  max-width: 420px;
+  margin-top: 18px;
+  color: #cfe0d6;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.authx-main {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(48px, 12vh, 120px) 64px 48px;
+}
+
+.authx-inner {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.authx-tabs {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+}
+
+.authx-tab {
+  margin-bottom: -1px;
+  padding: 0 2px 12px;
+  border-bottom: 3px solid transparent;
+  color: var(--text-muted);
+  font-size: 17px;
+  font-weight: 600;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.authx-tab:hover {
+  color: var(--primary);
+}
+
+.authx-tab.active {
+  border-bottom-color: var(--primary);
+  color: var(--primary);
+}
+
+.authx-panel {
+  animation: authx-slide 0.4s ease both;
+}
+
+.authx-panel h1 {
+  color: var(--primary);
+  font-size: 36px;
+  letter-spacing: -0.8px;
+}
+
+.authx-sub {
+  margin: 8px 0 28px;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.authx-form .form-group {
+  margin-bottom: 20px;
+}
+
+.authx-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.authx-form label span {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.authx-form input {
+  width: 100%;
+  height: 54px;
+  padding: 0 16px;
+  border: 1px solid #d7e0d6;
+  border-radius: 12px;
+  outline: none;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.authx-form input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(23, 63, 53, 0.12);
+}
+
+.authx-form .toggle-password {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.authx-form .auth-message {
+  font-size: 14px;
+}
+
+.authx-form .auth-message.error {
+  animation: authx-shake 0.35s ease;
+}
+
+.authx-submit {
+  width: 100%;
+  min-height: 56px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.authx-submit:hover:not(:disabled) {
+  background: var(--primary-hover);
+  box-shadow: 0 8px 20px rgba(23, 63, 53, 0.2);
+  transform: translateY(-1px);
+}
+
+.authx-submit:disabled {
+  cursor: not-allowed;
+}
+
+.authx-submit.is-loading::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: authx-spin 0.7s linear infinite;
+}
+
+.authx-submit.is-success {
+  background: #2e7d4f;
+  animation: authx-pop 0.3s ease;
+}
+
+.authx-switch {
+  margin-top: 24px;
+  color: var(--text-muted);
+  font-size: 15px;
+  text-align: center;
+}
+
+.authx-switch a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.authx-switch a:hover {
+  text-decoration: underline;
+}
+
+.authx-back {
+  display: block;
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.authx-back:hover {
+  color: var(--primary);
+}
+
+@keyframes authx-slide {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes authx-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes authx-pop {
+  from { transform: scale(0.96); }
+  to { transform: scale(1); }
+}
+
+@keyframes authx-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+@media (max-width: 760px) {
+  .authx-card {
+    grid-template-columns: 1fr;
+  }
+
+  .authx-side {
+    gap: 14px;
+    padding: 28px 24px;
+  }
+
+  .authx-side h2 {
+    font-size: 28px;
+  }
+
+  .authx-main {
+    padding: 28px 20px 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .authx-panel,
+  .authx-submit,
+  .authx-submit.is-loading::before,
+  .authx-form .auth-message.error {
+    animation: none;
+    transition: none;
+  }
+}
+
+
+/* ===== Halaman Reservasi Saya (tabel, chip, filter) ===== */
+.rsv-section {
+  padding: 40px 0 64px;
+}
+
+.rsv-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.rsv-head h1 {
+  font-size: 32px;
+  color: var(--primary);
+  margin: 0 0 6px;
+}
+
+.rsv-head p {
+  margin: 0;
+  color: #6b7a74;
+}
+
+.rsv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.rsv-chip {
+  border: 1px solid #dfe6e2;
+  background: #fff;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.rsv-chip:hover {
+  border-color: var(--primary);
+}
+
+.rsv-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.rsv-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.rsv-filter select {
+  font: inherit;
+  font-size: 14px;
+  padding: 10px 14px;
+  min-width: 240px;
+  border: 1px solid #dfe6e2;
+  border-radius: 10px;
+  background: #fff;
+  color: #1c2b26;
+}
+
+.rsv-reset {
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 20px;
+  border: 1.5px solid var(--primary);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.rsv-reset:hover {
+  background: #f1f6f3;
+}
+
+.rsv-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e6ece9;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.rsv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.rsv-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a9892;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e6ece9;
+  white-space: nowrap;
+}
+
+.rsv-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #eef2f0;
+  color: #1c2b26;
+  vertical-align: middle;
+}
+
+.rsv-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.rsv-table tbody tr[data-group]:hover {
+  background: #f8fbf9;
+}
+
+.rsv-none {
+  text-align: center;
+  color: #6b7a74;
+  padding: 32px 18px;
+}
+
+.rsv-btn {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 22px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.rsv-btn:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 640px) {
+  .rsv-head,
+  .rsv-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rsv-filter select {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* ===== Tombol batalkan dan dialog konfirmasi (Reservasi) ===== */
+.rsv-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+button.rsv-btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  border: 0;
+  cursor: pointer;
+}
+
+.rsv-btn-outline {
+  background: #fff;
+  color: var(--primary);
+  border: 1.5px solid var(--primary) !important;
+  padding: 7.5px 20px;
+}
+
+.rsv-btn-outline:hover {
+  background: #f1f6f3;
+  opacity: 1;
+}
+
+.rsv-btn-danger {
+  background: #b3261e;
+  color: #fff;
+}
+
+.rsv-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rsv-dialog {
+  margin: auto;
+  border: 0;
+  border-radius: 18px;
+  padding: 32px;
+  width: calc(100% - 32px);
+  max-width: 440px;
+  color: #1c2b26;
+  box-shadow: 0 24px 70px rgba(15, 40, 33, 0.3);
+}
+
+.rsv-dialog[open] {
+  animation: rsv-pop 0.22s ease both;
+}
+
+.rsv-dialog::backdrop {
+  background: rgba(15, 40, 33, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+@keyframes rsv-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rsv-dialog[open] {
+    animation: none;
+  }
+}
+
+.rsv-dialog h3 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  color: var(--primary);
+}
+
+.rsv-dialog p {
+  margin: 0 0 6px;
+}
+
+.rsv-dialog-note {
+  font-size: 13px;
+  color: #6b7a74;
+}
+
+.rsv-dialog-error {
+  margin-top: 10px !important;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fdecea;
+  color: #b3261e;
+  font-size: 13px;
+}
+
+.rsv-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+button.rsv-cancel-wide {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 20px;
+  font-size: 14px;
 }
