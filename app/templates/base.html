@@ -35,7 +35,9 @@
                    class="nav-link{% if ep.startswith('reservations.') %} active{% endif %}"
                    {% if ep.startswith('reservations.') %}aria-current="page"{% endif %}>Reservasi</a>
                 {% endif %}
-                <a href="#" class="nav-link">Tentang</a>
+                <a href="{{ url_for('about') }}"
+                   class="nav-link{% if ep == 'about' %} active{% endif %}"
+                   {% if ep == 'about' %}aria-current="page"{% endif %}>Tentang</a>
             </nav>
 
             <div class="nav-actions">

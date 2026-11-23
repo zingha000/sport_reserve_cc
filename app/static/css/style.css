@@ -4210,3 +4210,148 @@ button.rsv-cancel-wide {
     padding: 40px 16px;
   }
 }
+/* ===== Halaman Tentang ===== */
+.about-facts {
+  background: var(--primary);
+  color: #fff;
+}
+
+.about-facts-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.about-facts-row strong {
+  display: block;
+  color: var(--accent);
+  font-size: 28px;
+  letter-spacing: -0.5px;
+}
+
+.about-facts-row span {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.about-block {
+  padding: 52px 0;
+}
+
+.about-block-alt {
+  background: #edf3e7;
+}
+
+.about-block h2 {
+  margin: 4px 0 14px;
+  color: var(--primary);
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing: -0.5px;
+}
+
+.about-title {
+  margin-bottom: 24px !important;
+}
+
+.about-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.about-list {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.about-list li {
+  position: relative;
+  padding: 12px 14px 12px 40px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+
+.about-list li::before {
+  position: absolute;
+  left: 14px;
+  font-weight: 700;
+}
+
+.about-list-old li::before {
+  content: "✕";
+  color: #b5483a;
+}
+
+.about-list-new li::before {
+  content: "✓";
+  color: #4f7a2a;
+}
+
+.about-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.about-card {
+  padding: 26px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.about-card span {
+  color: #779d43;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.about-card h3 {
+  margin: 18px 0 8px;
+  color: var(--primary);
+  font-size: 17px;
+}
+
+.about-card p {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.about-faq {
+  max-width: 760px;
+}
+
+.about-faq details {
+  margin-bottom: 10px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.about-faq summary {
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.about-faq details p {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 800px) {
+  .about-facts-row,
+  .about-split,
+  .about-cards {
+    grid-template-columns: 1fr;
+  }
+}

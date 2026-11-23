@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Tentang - SportReserve{% endblock %}
+
+{% block content %}
+<section class="listing-hero">
+  <div class="container">
+    <span class="section-label">TENTANG KAMI</span>
+    <h1>Kami Bikin Booking Futsal Jadi Sederhana.</h1>
+    <p>
+      SportReserve lahir dari masalah yang akrab buat pemain futsal: jadwal
+      tabrakan, kabar lapangan kosong yang tidak jelas, dan konfirmasi yang
+      lama.
+    </p>
+  </div>
+</section>
+
+<section class="about-facts">
+  <div class="container about-facts-row">
+    <div><strong>10 menit</strong><span>jadwal ditahan selama kamu membayar</span></div>
+    <div><strong>QRIS</strong><span>pembayaran satu kode untuk semua dompet digital</span></div>
+    <div><strong>E-tiket</strong><span>bukti reservasi resmi setelah dikonfirmasi admin</span></div>
+  </div>
+</section>
+
+<section class="about-block">
+  <div class="container about-split">
+    <div>
+      <span class="section-label">MASALAH</span>
+      <h2>Dulu</h2>
+      <ul class="about-list about-list-old">
+        <li>Tanya jadwal lewat chat dan menunggu balasan.</li>
+        <li>Dua tim memesan jam yang sama.</li>
+        <li>Bukti transfer tercecer di percakapan.</li>
+      </ul>
+    </div>
+    <div>
+      <span class="section-label">SOLUSI</span>
+      <h2>Sekarang</h2>
+      <ul class="about-list about-list-new">
+        <li>Jam kosong langsung terlihat di halaman lapangan.</li>
+        <li>Database menolak jadwal yang bentrok, jadi tidak ada pesanan ganda.</li>
+        <li>Bukti bayar diunggah dan dicek admin di satu tempat.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="about-block about-block-alt">
+  <div class="container">
+    <span class="section-label">YANG KAMI PEGANG</span>
+    <h2 class="about-title">Tiga prinsip layanan</h2>
+    <div class="about-cards">
+      <article class="about-card">
+        <span>01</span>
+        <h3>Jujur soal jadwal</h3>
+        <p>Slot yang tampil kosong memang kosong, tidak ada pemesanan ganda.</p>
+      </article>
+      <article class="about-card">
+        <span>02</span>
+        <h3>Pembayaran terverifikasi</h3>
+        <p>Setiap bukti bayar diperiksa admin sebelum reservasi dikonfirmasi.</p>
+      </article>
+      <article class="about-card">
+        <span>03</span>
+        <h3>Praktis dari HP</h3>
+        <p>Tampilan menyesuaikan layar, jadi booking bisa dilakukan di mana saja.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="about-block">
+  <div class="container about-faq">
+    <span class="section-label">PERTANYAAN UMUM</span>
+    <h2 class="about-title">FAQ</h2>
+    <details>
+      <summary>Berapa lama jadwal ditahan?</summary>
+      <p>Jadwal ditahan 10 menit. Lewat dari itu, slot dibuka kembali untuk pemain lain.</p>
+    </details>
+    <details>
+      <summary>Bagaimana cara membayar?</summary>
+      <p>Bayar lewat QRIS, lalu unggah bukti pembayaran di halaman reservasi.</p>
+    </details>
+    <details>
+      <summary>Kapan reservasi dianggap pasti?</summary>
+      <p>Setelah admin memeriksa bukti dan mengonfirmasi. E-tiket muncul di akunmu.</p>
+    </details>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="container">
+    <span class="section-label">SIAP BERMAIN</span>
+    <h2>Cari lapangan dan pesan sekarang.</h2>
+    <a href="{{ url_for('fields.list_fields') }}" class="btn-accent">Lihat Lapangan</a>
+  </div>
+</section>
+{% endblock %}
