@@ -43,4 +43,8 @@ def create_app():
             "index.html", fields=fields, schedule=schedule
         )
 
+    @app.route("/tentang")
+    def about():
+        return render_template("about.html")
+
     return app
