@@ -1,15 +1,16 @@
+@'
 {% extends "base.html" %}
 
-{% block title %}SportReserve - Reservasi Lapangan Futsal{% endblock %}
+{% block title %}SportReserve - Booking Lapangan Futsal di Bandung{% endblock %}
 
 {% block content %}
 <section class="listing-hero">
   <div class="container">
     <span class="section-label">RESERVASI LAPANGAN FUTSAL</span>
-    <h1>Booking Lapangan Futsal, Tanpa Ribet.</h1>
+    <h1>Booking Lapangan Futsal di Bandung, Tanpa Ribet.</h1>
     <p>
-      Pilih lapangan, cek jadwal yang tersedia, bayar lewat QRIS, lalu
-      tunggu konfirmasi. Semua dari satu tempat.
+      Pilih lapangan, cek jadwal yang masih kosong, bayar lewat QRIS, lalu
+      tunggu konfirmasi. Semuanya dari satu tempat.
     </p>
 
     <div class="admin-actions">
@@ -18,7 +19,7 @@
       </a>
       {% if session.get("user_id") %}
       <a href="{{ url_for('reservations.list_reservations') }}" class="btn-secondary">
-        Reservasi Saya
+        Reservasi
       </a>
       {% else %}
       <a href="{{ url_for('auth.register_page') }}" class="btn-secondary">
@@ -29,7 +30,56 @@
   </div>
 </section>
 
-<section class="listing-section">
+<section class="home-section">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-text">
+        <span class="section-label">KENAPA SPORTRESERVE</span>
+        <h2>Main futsal tanpa bolak-balik telepon.</h2>
+        <p>
+          SportReserve membantu pemain futsal di Bandung memesan lapangan
+          tanpa antre dan tanpa menebak jadwal. Jadwal selalu terbaru,
+          pembayaran diperiksa langsung oleh admin, dan setiap reservasi
+          yang dikonfirmasi punya e-tiket resmi.
+        </p>
+        <ul class="check-list">
+          <li>Jadwal kosong terlihat langsung, tanpa perlu menelepon.</li>
+          <li>Bayar lewat QRIS dan unggah bukti di satu halaman.</li>
+          <li>Konfirmasi dari admin dan e-tiket langsung di akunmu.</li>
+        </ul>
+      </div>
+
+      <div class="schedule-card">
+        <div class="schedule-head">
+          <h3>Jadwal Terdekat</h3>
+          <span class="schedule-note">Slot yang sudah terkonfirmasi</span>
+        </div>
+
+        {% for item in schedule %}
+        <div class="schedule-row">
+          <div>
+            <strong>{{ item.field }}</strong>
+            <small>{{ item.day }} · {{ item.start }} - {{ item.end }}</small>
+          </div>
+          <span class="pill pill-{{ item.kind }}">{{ item.label }}</span>
+        </div>
+        {% endfor %}
+
+        {% if not schedule %}
+        <p class="schedule-empty">
+          Belum ada jadwal terkonfirmasi. Jadilah yang pertama memesan.
+        </p>
+        {% endif %}
+
+        <p class="schedule-foot">
+          Buka halaman lapangan untuk melihat semua jam yang masih kosong.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="home-section home-section-alt home-section-tight">
   <div class="container">
     <div class="listing-toolbar">
       <div>
@@ -38,28 +88,109 @@
       </div>
     </div>
 
-    <div class="admin-stats">
-      <div class="admin-stat">
-        <span>Langkah 1</span>
-        <strong>Pilih</strong>
-        <small>Pilih lapangan dan lihat jadwal yang masih kosong.</small>
+    <div class="order-steps">
+      <div class="order-step">
+        <span class="order-step-no">1</span>
+        <div>
+          <strong>Pilih</strong>
+          <small>Pilih lapangan dan lihat jam yang masih kosong.</small>
+        </div>
       </div>
-      <div class="admin-stat">
-        <span>Langkah 2</span>
-        <strong>Tahan</strong>
-        <small>Jadwal ditahan 10 menit selama Anda membayar.</small>
+      <div class="order-step">
+        <span class="order-step-no">2</span>
+        <div>
+          <strong>Tahan</strong>
+          <small>Jadwal ditahan sementara selama kamu membayar.</small>
+        </div>
       </div>
-      <div class="admin-stat">
-        <span>Langkah 3</span>
-        <strong>Bayar</strong>
-        <small>Bayar lewat QRIS dan unggah bukti pembayaran.</small>
+      <div class="order-step">
+        <span class="order-step-no">3</span>
+        <div>
+          <strong>Bayar</strong>
+          <small>Bayar lewat QRIS lalu unggah bukti pembayaran.</small>
+        </div>
       </div>
-      <div class="admin-stat">
-        <span>Langkah 4</span>
-        <strong>Konfirmasi</strong>
-        <small>Admin memeriksa bukti dan mengonfirmasi reservasi.</small>
+      <div class="order-step">
+        <span class="order-step-no">4</span>
+        <div>
+          <strong>Konfirmasi</strong>
+          <small>Admin memeriksa bukti dan mengonfirmasi reservasi.</small>
+        </div>
       </div>
     </div>
   </div>
 </section>
+
+<section class="home-section">
+  <div class="container">
+    <div class="listing-toolbar">
+      <div>
+        <h2>Lapangan Tersedia</h2>
+        <p>Beberapa lapangan futsal pilihan di Bandung.</p>
+      </div>
+      <a href="{{ url_for('fields.list_fields') }}" class="home-link">
+        Lihat semua &rarr;
+      </a>
+    </div>
+
+    <div class="field-grid">
+      {% for field in fields %}
+      <article class="field-card" data-price="{{ field.price }}">
+        <div class="field-image">
+          {% if field.image %}
+          <img src="{{ field.image }}" alt="{{ field.name }}" />
+          {% else %}
+          <div class="field-image-placeholder">
+            <span>⚽</span>
+            <small>SPORTRESERVE</small>
+          </div>
+          {% endif %}
+
+          <span class="field-status">{{ field.status }}</span>
+        </div>
+
+        <div class="field-card-body">
+          <span class="field-type">{{ field.type }}</span>
+
+          <h3>{{ field.name }}</h3>
+
+          <p class="field-location"><span>⌖</span> {{ field.location }}</p>
+
+          <div class="field-card-footer">
+            <div class="field-price">
+              <strong>Rp{{ "{:,.0f}".format(field.price).replace(",", ".") }}</strong>
+              <small>/ jam</small>
+            </div>
+
+            <a
+              href="{{ url_for('fields.detail_field', field_id=field.id) }}"
+              class="field-detail-btn"
+            >
+              Lihat Detail
+            </a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    {% if not fields %}
+    <div class="field-empty">
+      <div class="field-empty-icon">⚽</div>
+      <h3>Belum ada lapangan tersedia</h3>
+      <p>Silakan kembali lagi nanti.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="container">
+    <span class="section-label">SIAP BERMAIN</span>
+    <h2>Siap bermain? Pesan lapanganmu sekarang juga.</h2>
+    <p>Pilih jadwal, bayar lewat QRIS, dan amankan lapanganmu dalam beberapa menit.</p>
+    <a href="{{ url_for('fields.list_fields') }}" class="btn-accent">Mulai Booking</a>
+  </div>
+</section>
 {% endblock %}
+'@ | Set-Content -Path app\templates\index.html -Encoding utf8
