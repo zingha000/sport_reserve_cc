@@ -640,7 +640,8 @@ a {
 ============================== */
 
 .listing-hero {
-  padding: 65px 0;
+  padding: 65px 0 100px;
+  min-height: 360px;
   background-image:
     linear-gradient(
       90deg,
@@ -3673,7 +3674,7 @@ main {
   justify-content: center;
   gap: 32px;
   padding: 64px;
-  background: var(--primary);
+  background: url("../images/login%20regis.webp") left center / cover no-repeat;
   color: #ffffff;
 }
 
